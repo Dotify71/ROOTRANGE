@@ -211,6 +211,21 @@ export class SimulationEngine {
         `Machine ${machineId} compromise level updated to ${level}`,
         level === 'ROOT' ? 40 : 20
       );
+
+      // Pivot route discovery on USER or ROOT
+      if (level === 'USER' || level === 'ROOT') {
+        for (const subnet of this.subnets) {
+          if (subnet.requiredPivotMachineId === machineId) {
+            this.emitEvent(
+              'NETWORK_ROUTE_DISCOVERED',
+              machineId,
+              { subnetId: subnet.id, subnetCidr: subnet.cidr, gatewayIp: subnet.gatewayIp },
+              `Pivot route unlocked: Subnet ${subnet.name} (${subnet.cidr}) is now reachable via ${machineId}!`,
+              15
+            );
+          }
+        }
+      }
     }
   }
 
@@ -282,6 +297,19 @@ export class SimulationEngine {
 
   public getDiscoveredPorts(machineId: string): number[] {
     return Array.from(this.discoveredPorts.get(machineId) || []);
+  }
+
+  public getDiscoveredRoutes(machineId: string): string[] {
+    return Array.from(this.discoveredRoutes.get(machineId) || []);
+  }
+
+  public getCompletedObjectives(machineId?: string): string[] {
+    if (machineId) {
+      const machine = this.machines.get(machineId);
+      if (!machine) return [];
+      return machine.objectives.filter((o) => this.completedObjectives.has(o.id)).map((o) => o.id);
+    }
+    return Array.from(this.completedObjectives);
   }
 
   // --- Web Route Discovery & Execution ---

@@ -38,3 +38,10 @@
 | **REQ-34** | Synthetic Kerberoasting & Hash Cracking | **Verified** | `GetUserSPNs.py` extracts service ticket for `MSSQLSvc` SPN, and `john` / `hashcat` cracks hash with `rockyou.txt` recovering User Flag. |
 | **REQ-35** | Domain Admin DCSync & Pass-The-Hash | **Verified** | `secretsdump.py` extracts Domain Admin NTLM hash via `SeBackupPrivilege`, and `psexec.py` drops into SYSTEM cmd prompt on `corp-dc01` for Root Flag. |
 | **REQ-36** | Multi-Target Automated Verification | **Verified** | `src/tests/phase5IronBankAndCorpDc01.test.ts` exercises all 15 scenarios covering recon, auth bypass, privesc, isolation, and reset (106 tests total). |
+| **REQ-37** | Interactive React Flow Attack Graph | **Verified** | Production React Flow canvas with custom machine nodes, directed pivot edges, background grid, and minimap in `src/components/AttackGraph.tsx`. |
+| **REQ-38** | 8 Distinct Node States | **Verified** | Implemented `unknown`, `discovered`, `reachable`, `vulnerable`, `initial-access`, `privileged`, `compromised`, and `completed` in `src/types/attackGraph.ts`. |
+| **REQ-39** | Strict Fog-of-War & Pivot Boundaries | **Verified** | Downstream isolated machines (`iron-vault`, `corp-dc01`) and transit router redact IPs, ports, and CVEs until upstream pivot foothold is gained. |
+| **REQ-40** | Interactive Controls, Search, & Filters | **Verified** | Zoom, pan, fit-to-view, reset layout, live search, and 7 state filter tabs with count badges in `AttackGraphControls.tsx`. |
+| **REQ-41** | Forensics Drawer & Accessible Table | **Verified** | `AttackGraphDetailsDrawer.tsx` provides rich forensics inspection and action buttons; `AttackGraphAccessibleTable.tsx` provides semantic table alternative. |
+| **REQ-42** | Attack Graph Automated Verification | **Verified** | `src/tests/phase6AttackGraph.test.ts` exercises 17 test cases covering topology derivation, fog-of-war, event reactions, search/filters, and resets (123 total tests). |
+

@@ -74,3 +74,21 @@
 - [x] Domain privilege escalation via DCSync (`secretsdump.py`) and Pass-the-Hash (`psexec.py`) capturing Domain Admin root flag.
 - [x] Dedicated machine detail views for both targets with tailored tabs, synthetic artifacts, and remediation guidance.
 - [x] Complete automated test suite (`src/tests/phase5IronBankAndCorpDc01.test.ts`) covering all 15 test cases (106 total passing tests).
+
+## Phase 6: Interactive Network Attack Graph
+- [x] Custom machine nodes using React Flow with state-specific visual styling and indicators.
+- [x] Directed network edges connecting Gateway -> DMZ Server -> Pivot Router -> Internal Vault -> Domain Controller.
+- [x] 8 Distinct Compromise States implemented: `unknown`, `discovered`, `reachable`, `vulnerable`, `initial-access`, `privileged`, `compromised`, `completed`.
+- [x] Conditional node and edge visibility with strict Fog-of-War preventing premature leakage of hidden IPs, ports, and CVEs.
+- [x] Directed pivot edges unlock and animate when upstream pivot hosts are compromised.
+- [x] Zoom in, Zoom out, Pan, and Fit-to-View controls.
+- [x] Reset Layout restoring optimal positions and viewport centering.
+- [x] Interactive Node Search by hostname, IP address, OS, or subnet with instant match highlighting.
+- [x] State Filter toolbar tabs (`ALL`, `REACHABLE`, `VULNERABLE`, `FOOTHOLD`, `ROOTED`, `COMPLETE`, `LOCKED`) with live badge counts.
+- [x] Comprehensive Attack Graph Legend explaining all 8 states, edge styles, and node roles.
+- [x] Selected-Node Forensics Details Drawer displaying machine specs, open ports table, vulnerability vectors, objectives, flags, and quick action buttons.
+- [x] Accessible Alternative Table/List View with full semantic HTML, ARIA labels, and keyboard navigation.
+- [x] Connected to simulation events (`SERVICE_DISCOVERED`, `INITIAL_ACCESS_GRANTED`, `PRIVILEGE_ESCALATED`, `NETWORK_ROUTE_DISCOVERED`, `FLAG_CAPTURED`, `CHALLENGE_COMPLETED`).
+- [x] Graph state stays strictly synchronized after challenge resets and page refreshes.
+- [x] Automated test suite (`src/tests/phase6AttackGraph.test.ts`) covering all 17 test cases across topology derivation, fog-of-war, event reactions, search/filters, and resets (123 total tests).
+

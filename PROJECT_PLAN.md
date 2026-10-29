@@ -44,10 +44,16 @@ ROOTRANGE is an open-source, in-browser Cyber Range and Gamified Penetration Tes
 - Tailored machine detail tabs, synthetic source code inspectors, and comprehensive remediation guides.
 - Automated end-to-end multi-target test suite (`phase5IronBankAndCorpDc01.test.ts`).
 
-### Phase 6: BloodHound Attack Graph & Subnet Pivoting
-- 2D interactive network topology visualizer.
-- Dynamic compromise status updates (Locked $\to$ Discovered $\to$ User Foothold $\to$ Rooted).
-- Multi-subnet traversal (DMZ $\to$ Internal Services $\to$ AD Domain Forest).
+### Phase 6: Interactive Network Attack Graph (Complete)
+- Production-grade React Flow interactive network canvas (`src/components/AttackGraph.tsx`) deriving topology directly from simulation engine and machine definitions.
+- Custom machine nodes with role icons, compromise status glows, open ports counters, objective progress bars, and flag indicators (`AttackGraphNodeComponent.tsx`).
+- 8 Distinct compromise states: `unknown`, `discovered`, `reachable`, `vulnerable`, `initial-access`, `privileged`, `compromised`, and `completed`.
+- Strict Fog-of-War information isolation: downstream hosts and pivot routers redact IPs (`?.?.?.?`), ports, and CVEs until upstream pivot foothold is gained (`attackGraphTopology.ts`).
+- Directed pivot edges dynamically unlock, style, and animate when pivot machines are breached.
+- Rich interactive toolbar with Zoom In/Out, Fit-to-View, Reset Layout, live node search by IP/host/OS, and state filter tabs (`AttackGraphControls.tsx`).
+- Dedicated offensive-security legend (`AttackGraphLegend.tsx`) and forensics details drawer (`AttackGraphDetailsDrawer.tsx`).
+- Semantic HTML and ARIA-compliant Accessible Table/List View (`AttackGraphAccessibleTable.tsx`).
+- Fully automated test suite (`src/tests/phase6AttackGraph.test.ts`) validating state derivation, event reactions, fog-of-war isolation, search, filters, and resets (123 total tests).
 
 ### Phase 7: In-Browser Web Proxy & Repeater
 - Intercept and replay raw HTTP requests.

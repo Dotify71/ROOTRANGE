@@ -28,13 +28,23 @@ export interface TargetMachine {
   webEndpoint?: string;
 }
 
+export type AttackGraphNodeState =
+  | 'unknown'
+  | 'discovered'
+  | 'reachable'
+  | 'vulnerable'
+  | 'initial-access'
+  | 'privileged'
+  | 'compromised'
+  | 'completed';
+
 export interface NetworkNode {
   id: string;
   label: string;
   ip: string;
   subnet: string;
   type: 'gateway' | 'target' | 'pivot' | 'dc';
-  status: 'locked' | 'discovered' | 'user' | 'root';
+  status: 'locked' | 'discovered' | 'user' | 'root' | AttackGraphNodeState;
   parentId?: string;
 }
 

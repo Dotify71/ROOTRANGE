@@ -92,7 +92,8 @@ export const INITIAL_MACHINES: TargetMachine[] = [
 export const INITIAL_NETWORK_NODES: NetworkNode[] = [
   { id: 'gw', label: '10.10.10.1', ip: '10.10.10.1', subnet: 'Perimeter Gateway', type: 'gateway', status: 'discovered' },
   { id: 'ecorp-hr', label: 'E-Corp HR (10.10.11.45)', ip: '10.10.11.45', subnet: 'DMZ Subnet', type: 'target', status: 'discovered', parentId: 'gw' },
-  { id: 'iron-vault', label: 'IronBank API (10.10.11.82)', ip: '10.10.11.82', subnet: 'Internal Services', type: 'target', status: 'locked', parentId: 'ecorp-hr' },
+  { id: 'pivot-router', label: 'Pivot Router (10.10.12.1)', ip: '10.10.12.1', subnet: 'Internal Transit', type: 'pivot', status: 'locked', parentId: 'ecorp-hr' },
+  { id: 'iron-vault', label: 'IronBank API (10.10.11.82)', ip: '10.10.11.82', subnet: 'Internal Services', type: 'target', status: 'locked', parentId: 'pivot-router' },
   { id: 'corp-dc01', label: 'OmniCorp DC01 (10.10.11.99)', ip: '10.10.11.99', subnet: 'Core AD Forest', type: 'dc', status: 'locked', parentId: 'iron-vault' },
 ];
 
@@ -113,15 +114,45 @@ export const useGameStore = create<GameState>((set, get) => {
         updatedMachines = state.machines.map((m) =>
           m.id === event.machineId && m.compromiseLevel === 'NONE' ? { ...m, compromiseLevel: 'USER' } : m
         );
-        updatedNodes = state.networkNodes.map((n) =>
-          n.id === event.machineId && n.status !== 'root' ? { ...n, status: 'user' } : n
-        );
+        updatedNodes = state.networkNodes.map((n) => {
+          if (n.id === event.machineId && n.status !== 'root') return { ...n, status: 'user' };
+          // If ecorp-hr gained initial access, unlock pivot router and iron-vault
+          if (event.machineId === 'ecorp-hr' && (n.id === 'pivot-router' || n.id === 'iron-vault') && n.status === 'locked') {
+            return { ...n, status: 'discovered' };
+          }
+          // If iron-vault gained initial access, unlock corp-dc01
+          if (event.machineId === 'iron-vault' && n.id === 'corp-dc01' && n.status === 'locked') {
+            return { ...n, status: 'discovered' };
+          }
+          return n;
+        });
       } else if (event.type === 'PRIVILEGE_ESCALATED' || event.type === 'MACHINE_COMPROMISED') {
         updatedMachines = state.machines.map((m) =>
           m.id === event.machineId ? { ...m, compromiseLevel: 'ROOT' } : m
         );
+        updatedNodes = state.networkNodes.map((n) => {
+          if (n.id === event.machineId) return { ...n, status: 'root' };
+          if (event.machineId === 'ecorp-hr' && (n.id === 'pivot-router' || n.id === 'iron-vault') && n.status === 'locked') {
+            return { ...n, status: 'discovered' };
+          }
+          if (event.machineId === 'iron-vault' && n.id === 'corp-dc01' && n.status === 'locked') {
+            return { ...n, status: 'discovered' };
+          }
+          return n;
+        });
+      } else if (event.type === 'NETWORK_ROUTE_DISCOVERED') {
+        updatedNodes = state.networkNodes.map((n) => {
+          if (event.machineId === 'ecorp-hr' && (n.id === 'pivot-router' || n.id === 'iron-vault') && n.status === 'locked') {
+            return { ...n, status: 'discovered' };
+          }
+          if (event.machineId === 'iron-vault' && n.id === 'corp-dc01' && n.status === 'locked') {
+            return { ...n, status: 'discovered' };
+          }
+          return n;
+        });
+      } else if (event.type === 'SERVICE_DISCOVERED') {
         updatedNodes = state.networkNodes.map((n) =>
-          n.id === event.machineId ? { ...n, status: 'root' } : n
+          n.id === event.machineId && n.status === 'locked' ? { ...n, status: 'discovered' } : n
         );
       }
 
@@ -182,6 +213,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
       for (const machine of machines) {
         if (machine.userFlag === trimmed && !machine.userClaimed) {
+          engine.claimFlag(trimmed);
           const points = machine.points.user;
           const newScore = score + points;
           const newRank = calculateRank(newScore);
@@ -216,6 +248,7 @@ export const useGameStore = create<GameState>((set, get) => {
         }
 
         if (machine.rootFlag === trimmed && !machine.rootClaimed) {
+          engine.claimFlag(trimmed);
           const points = machine.points.root;
           const newScore = score + points;
           const newRank = calculateRank(newScore);
