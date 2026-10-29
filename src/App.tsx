@@ -3,6 +3,7 @@ import { Terminal, Network, Globe, Bot, Shield, Trophy } from 'lucide-react';
 import { PwnboxTerminal } from './components/PwnboxTerminal';
 import { AttackGraph } from './components/AttackGraph';
 import { HttpRepeater } from './components/HttpRepeater';
+import { GhostOpsAi } from './components/GhostOpsAi';
 import { useGameStore } from './store/gameStore';
 
 export const App: React.FC = () => {
@@ -82,6 +83,7 @@ export const App: React.FC = () => {
         {activeTab === 'TERMINAL' && <PwnboxTerminal />}
         {activeTab === 'GRAPH' && <AttackGraph />}
         {activeTab === 'REPEATER' && <HttpRepeater />}
+        {activeTab === 'AI' && <GhostOpsAi />}
       </main>
 
       {/* Footer Status Bar */}
