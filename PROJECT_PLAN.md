@@ -30,21 +30,29 @@ ROOTRANGE is an open-source, in-browser Cyber Range and Gamified Penetration Tes
 - Deterministic command adapters for `nmap`, `gobuster`, `curl`, `ssh`, `sudo`, `hydra`, `sqlmap`, `nc`, and `linpeas.sh`.
 - Machine and range reset workflows and versioned JSON state serialization.
 
-### Phase 4: BloodHound Attack Graph & Subnet Pivoting
+### Phase 4: E-Corp HR Training Machine (Complete)
+- Linux-themed machine detail briefing page with IP (`10.10.11.45`), hostname (`ecorp-hr`), OS, and live service inventory.
+- Complete 7-stage discoverable attack path: Reconnaissance -> Web Directory Enumeration -> Log4Shell Vulnerability Investigation -> Simulated Initial Access -> User Flag -> Sudo Privilege Escalation -> Root Flag.
+- In-memory synthetic code & file inspector (`Log4jAuditLogger.java`, `pom.xml`, `/var/www/html/config.php`, `/etc/sudoers.d/alex`).
+- Educational remediation guidance explaining CVE-2021-44228 and GTFOBins sudo find misconfigurations.
+- In-page flag capture validation with instant feedback and machine state reset controls.
+- Comprehensive end-to-end automated journey test suite (`phase4EcorpMachine.test.ts`).
+
+### Phase 5: BloodHound Attack Graph & Subnet Pivoting
 - 2D interactive network topology visualizer.
 - Dynamic compromise status updates (Locked $\to$ Discovered $\to$ User Foothold $\to$ Rooted).
 - Multi-subnet traversal (DMZ $\to$ Internal Services $\to$ AD Domain Forest).
 
-### Phase 5: In-Browser Web Proxy & Repeater
+### Phase 6: In-Browser Web Proxy & Repeater
 - Intercept and replay raw HTTP requests.
 - Exploit presets for JNDI LDAP lookup strings and SQL injection bypasses.
 - Raw text and rendered HTML response inspectors.
 
-### Phase 6: GhostOps AI Offensive Copilot
+### Phase 7: GhostOps AI Offensive Copilot
 - Socratic Mentor providing progressive hints without spoiling flags.
 - Payload Forge generating pre-configured reverse shells and privesc commands.
 - Autopilot Red Team kill chain walkthrough.
 
-### Phase 7: Final Hardening & Verification
+### Phase 8: Final Hardening & Verification
 - End-to-end integration test suites.
 - Production build optimization and deployment readiness.

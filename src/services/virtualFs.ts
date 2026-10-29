@@ -425,6 +425,98 @@ export class VirtualFileSystem {
             },
           },
         },
+        opt: {
+          name: 'opt',
+          type: 'dir',
+          permissions: 'drwxr-xr-x',
+          mode: 0o755,
+          owner: 'root',
+          uid: 0,
+          group: 'root',
+          gid: 0,
+          size: 4096,
+          mtime: now,
+          children: {
+            ecorp: {
+              name: 'ecorp',
+              type: 'dir',
+              permissions: 'drwxr-xr-x',
+              mode: 0o755,
+              owner: 'www-data',
+              uid: 33,
+              group: 'www-data',
+              gid: 33,
+              size: 4096,
+              mtime: now,
+              children: {
+                'Log4jAuditLogger.java': {
+                  name: 'Log4jAuditLogger.java',
+                  type: 'file',
+                  permissions: '-rw-r--r--',
+                  mode: 0o644,
+                  owner: 'www-data',
+                  uid: 33,
+                  group: 'www-data',
+                  gid: 33,
+                  size: 450,
+                  mtime: now,
+                  content: `package com.ecorp.hr.audit;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+public class Log4jAuditLogger {
+    private static final Logger logger = LogManager.getLogger(Log4jAuditLogger.class);
+
+    public void processAuditPayload(String clientString) {
+        // [VULNERABILITY CVE-2021-44228]
+        // Untrusted user input logged directly into vulnerable Log4j engine with message lookups enabled
+        logger.info("Audit entry received: " + clientString);
+    }
+}`,
+                },
+                'pom.xml': {
+                  name: 'pom.xml',
+                  type: 'file',
+                  permissions: '-rw-r--r--',
+                  mode: 0o644,
+                  owner: 'www-data',
+                  uid: 33,
+                  group: 'www-data',
+                  gid: 33,
+                  size: 520,
+                  mtime: now,
+                  content: `<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.ecorp</groupId>
+  <artifactId>hr-portal</artifactId>
+  <version>2.4.1</version>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>2.14.1</version>
+    </dependency>
+  </dependencies>
+</project>`,
+                },
+                'application.properties': {
+                  name: 'application.properties',
+                  type: 'file',
+                  permissions: '-rw-r-----',
+                  mode: 0o640,
+                  owner: 'www-data',
+                  uid: 33,
+                  group: 'www-data',
+                  gid: 33,
+                  size: 180,
+                  mtime: now,
+                  content: 'server.port=8080\nspring.application.name=ecorp-hr-portal\nlog4j2.formatMsgNoLookups=false\nmanagement.endpoints.web.exposure.include=*',
+                },
+              },
+            },
+          },
+        },
         tmp: {
           name: 'tmp',
           type: 'dir',

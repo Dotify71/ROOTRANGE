@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Terminal as TerminalIcon, Sparkles, CornerDownLeft, Volume2, VolumeX, ShieldAlert } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Terminal as TerminalIcon, Sparkles, CornerDownLeft, Volume2, VolumeX, ShieldAlert, ExternalLink } from 'lucide-react';
 import { CommandInterpreter, CommandContext } from '../services/commandInterpreter';
 import { CommandRegistry } from '../services/commandRegistry';
 import { VirtualFileSystem } from '../services/virtualFs';
@@ -222,8 +223,16 @@ export const PwnboxTerminal: React.FC = () => {
 
         {/* Audio Toggle & Target Info */}
         <div className="flex items-center space-x-3 text-[11px]">
-          <span className="text-slate-400">
+          <span className="text-slate-400 flex items-center gap-1.5">
             TARGET: <strong className="text-emerald-400">{activeTarget.ip}</strong>
+            <Link
+              to={`/machines/${activeTarget.id}`}
+              className="text-cyan-400 hover:text-cyan-300 flex items-center gap-0.5 ml-1 bg-cyan-950/40 border border-cyan-800/60 px-1.5 py-0.5 rounded text-[10px]"
+              title="Inspect Machine Briefing & Milestones"
+            >
+              <span>BRIEFING</span>
+              <ExternalLink className="w-2.5 h-2.5" />
+            </Link>
           </span>
           <button
             onClick={() => {

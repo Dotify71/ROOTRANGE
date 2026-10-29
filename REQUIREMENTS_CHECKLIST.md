@@ -28,3 +28,8 @@
 | **REQ-24** | Deterministic Command Adapters | **Verified** | `SimulatedCommandAdapters` implements context-sensitive handlers for `nmap`, `gobuster`, `curl`, `ssh`, `sudo`, `hydra`, `sqlmap`, `nc`, and `linpeas.sh`. |
 | **REQ-25** | Objective & Prerequisite System | **Verified** | Challenge graph prevents skipping reconnaissance, initial foothold, and local enumeration prerequisites. |
 | **REQ-26** | Reset & Save-State Serialization | **Verified** | Independent machine reset, full range reset, and versioned JSON state serialization/restoration (`exportState`, `importState`). |
+| **REQ-27** | Machine Detail Briefing View | **Verified** | `MachineDetailPage.tsx` displays target metadata, IP (`10.10.11.45`), OS, ports, and real-time compromise status. |
+| **REQ-28** | Multi-Stage Discoverable Attack Path | **Verified** | 7 sequenced objectives: Recon -> Web Enum -> Vuln Investigation -> Initial Access -> User Flag -> Privesc -> Root Flag. |
+| **REQ-29** | Synthetic Source Code & Artifacts | **Verified** | `Log4jAuditLogger.java`, `pom.xml`, `/var/www/html/config.php`, and `/etc/sudoers.d/alex` in virtual FS with POSIX boundaries. |
+| **REQ-30** | Educational Remediation Guides | **Verified** | Practical mitigation and patch instructions for CVE-2021-44228 (Log4Shell) and sudo GTFOBins misconfigurations. |
+| **REQ-31** | End-to-End Automated Journey Test | **Verified** | `src/tests/phase4EcorpMachine.test.ts` validates the complete attack flow, prerequisite enforcement, and machine reset (11 tests). |

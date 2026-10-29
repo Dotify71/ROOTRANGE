@@ -4,6 +4,7 @@ import { AppShell } from './components/layout/AppShell';
 import { DashboardPage } from './pages/DashboardPage';
 import { CyberRangePage } from './pages/CyberRangePage';
 import { MachinesPage } from './pages/MachinesPage';
+import { MachineDetailPage } from './pages/MachineDetailPage';
 import { AttackGraphPage } from './pages/AttackGraphPage';
 import { WebRepeaterPage } from './pages/WebRepeaterPage';
 import { GhostOpsAiPage } from './pages/GhostOpsAiPage';
@@ -20,6 +21,7 @@ export const App: React.FC = () => {
           <Route index element={<DashboardPage />} />
           <Route path="range" element={<CyberRangePage />} />
           <Route path="machines" element={<MachinesPage />} />
+          <Route path="machines/:id" element={<MachineDetailPage />} />
           <Route path="graph" element={<AttackGraphPage />} />
           <Route path="repeater" element={<WebRepeaterPage />} />
           <Route path="ai" element={<GhostOpsAiPage />} />

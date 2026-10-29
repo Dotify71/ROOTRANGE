@@ -100,26 +100,35 @@ export const MachinesPage: React.FC = () => {
                 </div>
               </div>
 
-              <button
-                onClick={() => handleSelectAndLaunch(machine.id)}
-                className={`w-full py-2.5 rounded font-bold text-xs transition flex items-center justify-center gap-2 ${
-                  isCurrentActive
-                    ? 'bg-emerald-950 text-emerald-400 border border-emerald-600/60'
-                    : 'bg-emerald-600 hover:bg-emerald-500 text-black shadow-lg shadow-emerald-950/40'
-                }`}
-              >
-                {isCurrentActive ? (
-                  <>
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>TARGET ACTIVE IN PWNBOX</span>
-                  </>
-                ) : (
-                  <>
-                    <ArrowRight className="w-4 h-4" />
-                    <span>TARGET & SPAWN IN PWNBOX</span>
-                  </>
-                )}
-              </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => navigate(`/machines/${machine.id}`)}
+                    className="flex-1 py-2 rounded bg-slate-900 border border-slate-800 hover:border-cyan-500/60 text-slate-300 hover:text-cyan-300 transition text-xs font-bold"
+                  >
+                    BRIEFING
+                  </button>
+
+                  <button
+                    onClick={() => handleSelectAndLaunch(machine.id)}
+                    className={`flex-[2] py-2 rounded font-bold text-xs transition flex items-center justify-center gap-2 ${
+                      isCurrentActive
+                        ? 'bg-emerald-950 text-emerald-400 border border-emerald-600/60'
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-black shadow-lg shadow-emerald-950/40'
+                    }`}
+                  >
+                    {isCurrentActive ? (
+                      <>
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>ACTIVE</span>
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRight className="w-4 h-4" />
+                        <span>SPAWN</span>
+                      </>
+                    )}
+                  </button>
+                </div>
             </div>
           );
         })}

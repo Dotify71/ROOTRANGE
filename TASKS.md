@@ -50,3 +50,14 @@
 - [x] Versioned save-state serialization and restoration (`exportState`, `importState`).
 - [x] Deterministic simulated command adapters for `nmap`, `gobuster`, `curl`, `ssh`, `sudo`, `hydra`, `sqlmap`, `nc`, `linpeas.sh`.
 - [x] Comprehensive unit tests for event transitions, prerequisites, duplicate events, invalid actions, and reset behavior (22 tests in `phase3Simulation.test.ts`).
+
+## Phase 4: E-Corp HR Training Machine
+- [x] Dedicated Machine Detail Page (`/machines/:id`) with target briefing, IP, hostname, OS, and difficulty.
+- [x] Service inventory displaying live status, open ports, versions, and protocol banners (SSH, HTTP, Log4j app).
+- [x] Interactive 7-stage Attack Journey progress tracker (Recon -> Web Enum -> Vuln Investigation -> Initial Access -> User Flag -> Sudo Privesc -> Root Flag).
+- [x] Synthetic source code and configuration inspection tab (`Log4jAuditLogger.java`, `pom.xml`, `/var/www/html/config.php`, `/etc/sudoers.d/alex`).
+- [x] Comprehensive Educational Remediation Guide covering Apache Log4Shell (CVE-2021-44228) and Sudo GTFOBins misconfigurations.
+- [x] In-page Flag Submission modal and instant validation with sound and confetti triggers.
+- [x] Pristine machine reset workflow restoring machine state, services, sessions, and objectives.
+- [x] Seamless navigation between Machine Catalog (`/machines`), Machine Detail (`/machines/:id`), and Pwnbox Terminal (`/range`).
+- [x] Automated test suite (`src/tests/phase4EcorpMachine.test.ts`) validating end-to-end user attack path, prerequisites, file inspection, privilege escalation, and reset behavior (11 tests).
