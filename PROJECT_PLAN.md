@@ -5,7 +5,7 @@ ROOTRANGE is an open-source, in-browser Cyber Range and Gamified Penetration Tes
 
 ## 2. Phase Breakdown
 
-### Phase 1: Repository Audit and Project Foundation (Current)
+### Phase 1: Repository Audit and Project Foundation (Complete)
 - Establish React 18, TypeScript, and Vite with strict typing.
 - Configure Tailwind CSS, Lucide icons, and Zustand game store.
 - Implement React Router DOM with 10 functional routes.
@@ -13,10 +13,12 @@ ROOTRANGE is an open-source, in-browser Cyber Range and Gamified Penetration Tes
 - Create automated testing setup using Vitest and React Testing Library.
 - Provide comprehensive architectural and task tracking documentation.
 
-### Phase 2: Virtual Pwnbox Terminal & Shell Engine
-- In-memory virtual Linux filesystem (`/bin`, `/etc`, `/home/kali`, `/root`).
-- Command interpreter supporting pipelines (`| grep`), command history, and auto-complete.
-- Simulated offensive tooling: `nmap`, `gobuster`, `hydra`, `nc`, `curl`, and `sudo`.
+### Phase 2: Virtual Pwnbox Terminal & Shell Engine (Complete)
+- In-memory virtual Linux filesystem (`VirtualFileSystem`) with POSIX permissions and octal modes.
+- Modular shell parser (`ShellParser`) supporting arguments, quotes, escapes, pipelines, and redirection safely without `eval()`.
+- Typed command registry (`CommandRegistry`) supporting standard utilities (`pwd`, `ls`, `cd`, `cat`, `head`, `tail`, `grep`, `find`, `stat`, `env`, `history`, `echo`, `touch`, `mkdir`) and offensive tools (`nmap`, `gobuster`, `hydra`, `nc`, `curl`, `sudo`).
+- Realistic Kali Linux terminal interface (`PwnboxTerminal.tsx`) with dynamic prompt, command history, tab completion, and audio feedback.
+- Machine fixtures and simulated permission boundaries (`/etc/shadow`, `/root/root.txt`, `/root/scripts/backup.sh`).
 
 ### Phase 3: Simulated Machines Range & CVE Scenarios
 - Box 1: E-Corp HR (Log4j CVE-2021-44228 $\to$ Sudo Find Root Privesc).

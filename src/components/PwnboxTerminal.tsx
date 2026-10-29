@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Terminal as TerminalIcon, Sparkles, CornerDownLeft, Volume2, VolumeX, ShieldAlert } from 'lucide-react';
 import { CommandInterpreter, CommandContext } from '../services/commandInterpreter';
+import { CommandRegistry } from '../services/commandRegistry';
 import { VirtualFileSystem } from '../services/virtualFs';
 import { soundManager } from '../audio/soundManager';
 import { useGameStore } from '../store/gameStore';
@@ -8,6 +9,18 @@ import { useGameStore } from '../store/gameStore';
 interface TerminalLine {
   type: 'input' | 'output' | 'system' | 'prompt';
   text: string;
+}
+
+function getCommonPrefix(strings: string[]): string {
+  if (strings.length === 0) return '';
+  let prefix = strings[0];
+  for (let i = 1; i < strings.length; i++) {
+    while (!strings[i].startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return '';
+    }
+  }
+  return prefix;
 }
 
 export const PwnboxTerminal: React.FC = () => {
@@ -46,7 +59,7 @@ export const PwnboxTerminal: React.FC = () => {
 
     const promptText = inReverseShell
       ? `${user}@${hostname}:${cwd}${user === 'root' ? '#' : '$'} ${raw}`
-      : `┌──(kali㉿pwnbox)-[${cwd}]\n└─$ ${raw}`;
+      : `┌──(${user}㉿${hostname})-[${cwd}]\n└─${user === 'root' ? '#' : '$'} ${raw}`;
 
     const ctx: CommandContext = {
       user,
@@ -131,6 +144,54 @@ export const PwnboxTerminal: React.FC = () => {
       } else {
         setHistoryIndex(nextIdx);
         setInput(history[nextIdx] || '');
+      }
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      soundManager.playKey();
+
+      const currentVal = input;
+      if (!currentVal.trim()) return;
+
+      const parts = currentVal.split(' ');
+      if (parts.length === 1) {
+        // Autocomplete command name
+        const prefix = parts[0].toLowerCase();
+        const availableCommands = CommandRegistry.getAllCommands();
+        const matches = availableCommands.filter((c) => c.startsWith(prefix));
+        if (matches.length === 1) {
+          setInput(matches[0] + ' ');
+        } else if (matches.length > 1) {
+          const common = getCommonPrefix(matches);
+          if (common && common.length > prefix.length) {
+            setInput(common);
+          } else {
+            setLines((prev) => [
+              ...prev,
+              { type: 'prompt', text: `${user}@${hostname}:${cwd}$ ${currentVal}` },
+              { type: 'output', text: matches.join('   ') },
+            ]);
+          }
+        }
+      } else {
+        // Autocomplete filesystem path
+        const lastPart = parts[parts.length - 1];
+        const matches = fs.getCompletions(cwd, lastPart);
+        if (matches.length === 1) {
+          parts[parts.length - 1] = matches[0];
+          setInput(parts.join(' ') + (matches[0].endsWith('/') ? '' : ' '));
+        } else if (matches.length > 1) {
+          const common = getCommonPrefix(matches);
+          if (common && common.length > lastPart.length) {
+            parts[parts.length - 1] = common;
+            setInput(parts.join(' '));
+          } else {
+            setLines((prev) => [
+              ...prev,
+              { type: 'prompt', text: `${user}@${hostname}:${cwd}$ ${currentVal}` },
+              { type: 'output', text: matches.join('   ') },
+            ]);
+          }
+        }
       }
     }
   };
@@ -264,14 +325,19 @@ export const PwnboxTerminal: React.FC = () => {
         }}
         className="flex items-center px-3 py-2 bg-[#0a0f17] border-t border-slate-800/80"
       >
-        <span className="text-emerald-400 font-bold select-none mr-2">
-          {inReverseShell ? `${user}@${hostname}:${cwd}${user === 'root' ? '#' : '$'}` : '┌──(kali㉿pwnbox)-[$]'}
+        <span className="text-emerald-400 font-bold select-none mr-2 whitespace-nowrap">
+          {inReverseShell
+            ? `${user}@${hostname}:${cwd}${user === 'root' ? '#' : '$'} `
+            : `┌──(${user}㉿${hostname})-[${cwd}]$ `}
         </span>
         <input
           ref={inputRef}
           type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            soundManager.playKey();
+            setInput(e.target.value);
+          }}
           onKeyDown={handleKeyDown}
           placeholder="Enter offensive command (e.g. nmap, gobuster, help)..."
           className="flex-1 bg-transparent border-none outline-none text-slate-100 font-mono text-xs focus:ring-0 placeholder-slate-600"

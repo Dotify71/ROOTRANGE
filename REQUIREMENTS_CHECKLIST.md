@@ -16,3 +16,9 @@
 | **REQ-12** | Scripts & Linting | **Verified** | `npm run dev`, `npm run build`, `npm test` scripts in `package.json`. |
 | **REQ-13** | Documentation Artifacts | **Verified** | `README.md`, `PROJECT_PLAN.md`, `ARCHITECTURE.md`, `TASKS.md`, `REQUIREMENTS_CHECKLIST.md`. |
 | **REQ-14** | Clean Secrets & Gitignore | **Verified** | `.env.example` created, `.gitignore` protects secrets and build artifacts. |
+| **REQ-15** | Safe Shell Tokenizer & Parser | **Verified** | `ShellParser` in `src/services/shellParser.ts` parses quotes, escapes, pipes, and redirects without `eval()`. |
+| **REQ-16** | POSIX Virtual Filesystem | **Verified** | `VirtualFileSystem` in `src/services/virtualFs.ts` implements octal modes, UID/GID permission checks, and root traversal prevention. |
+| **REQ-17** | Command Registry & Handlers | **Verified** | `CommandRegistry` in `src/services/commandRegistry.ts` registers typed handlers for standard and offensive tools. |
+| **REQ-18** | Pipelines & Redirection | **Verified** | Multi-stage pipeline execution (`cat | grep | head`) and file redirection (`>`, `>>`) in `CommandInterpreter`. |
+| **REQ-19** | Tab Completion & Navigation | **Verified** | Tab completion for commands and virtual paths, and history navigation via Arrow keys in `PwnboxTerminal.tsx`. |
+| **REQ-20** | Machine Fixtures & Clues | **Verified** | Configured files for E-Corp HR machine (`/etc/passwd`, `/etc/shadow`, `/var/www/html/config.php`, `/home/alex/user.txt`, `/root/root.txt`). |
