@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Terminal, Network, Globe, Bot, Shield, Trophy } from 'lucide-react';
 import { PwnboxTerminal } from './components/PwnboxTerminal';
+import { AttackGraph } from './components/AttackGraph';
 import { useGameStore } from './store/gameStore';
 
 export const App: React.FC = () => {
@@ -78,6 +79,7 @@ export const App: React.FC = () => {
       {/* Main Interactive Stage */}
       <main className="flex-1 overflow-hidden relative p-2">
         {activeTab === 'TERMINAL' && <PwnboxTerminal />}
+        {activeTab === 'GRAPH' && <AttackGraph />}
       </main>
 
       {/* Footer Status Bar */}
