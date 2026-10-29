@@ -88,6 +88,13 @@ OFFENSIVE SECURITY TOOLS:
   nc -lvnp <port>          Arbitrary TCP/UDP listener and reverse shell catcher
   sudo [-l] [command]      Execute a command as another user / root
   linpeas.sh               Linux Privilege Escalation Awesome Script
+  bash [script]            Execute shell script or trigger scheduled task
+  smbclient -L //host      Enumerate SMB shares and inspect shared files
+  GetUserSPNs.py -request  Active Directory Kerberoasting ticket harvester
+  john --wordlist <hash>   Offline password hash cracking utility
+  secretsdump.py <target>  Dump Active Directory domain hashes via DCSync
+  psexec.py <target>       Pass-the-hash remote Windows administrative execution
+  crackmapexec smb <host>  Swiss army knife for Active Directory enumeration
 
 PIPELINE & REDIRECTION:
   command1 | command2      Pipe stdout of command1 to stdin of command2
@@ -246,6 +253,12 @@ tun0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
       const errors: string[] = [];
 
       for (const file of args) {
+        if (file.includes('root.txt') && ctx.hostname === 'iron-vault') {
+          if (ctx.uid === 0) {
+            outputs.push('ROOTRANGE{r00t_cr0n_ov3rwr1t3_pwn4g3}\n');
+            continue;
+          }
+        }
         const res = ctx.fs.readFile(ctx.cwd, file, ctx.uid, ctx.gid);
         if (res.success) {
           outputs.push(res.content || '');
@@ -508,6 +521,35 @@ Change: ${node.mtime.toISOString()}`,
     this.register('linpeas', linpeasHandler);
     this.register('linpeas.sh', linpeasHandler);
     this.register('./linpeas.sh', linpeasHandler);
+
+    // 25b. BASH / SH / SCRIPT EXECUTION
+    const scriptHandler: CommandHandler = (args, ctx) => SimulatedCommandAdapters.executeScript(args, ctx);
+    this.register('bash', scriptHandler);
+    this.register('sh', scriptHandler);
+    this.register('./backup.sh', (args, ctx) => SimulatedCommandAdapters.executeScript(['backup.sh', ...args], ctx));
+    this.register('/opt/ironbank/scripts/backup.sh', (args, ctx) => SimulatedCommandAdapters.executeScript(['backup.sh', ...args], ctx));
+
+    // 25c. ACTIVE DIRECTORY & OFFENSIVE TOOLS
+    this.register('smbclient', (args) => SimulatedCommandAdapters.smbclient(args));
+    const spnHandler: CommandHandler = (args, ctx) => SimulatedCommandAdapters.getUserSPNs(args, ctx);
+    this.register('getuserspns.py', spnHandler);
+    this.register('getuserspns', spnHandler);
+
+    const johnHandler: CommandHandler = (args) => SimulatedCommandAdapters.john(args);
+    this.register('john', johnHandler);
+    this.register('hashcat', johnHandler);
+
+    const secretsHandler: CommandHandler = (args) => SimulatedCommandAdapters.secretsdump(args);
+    this.register('secretsdump.py', secretsHandler);
+    this.register('secretsdump', secretsHandler);
+
+    const psexecHandler: CommandHandler = (args) => SimulatedCommandAdapters.psexec(args);
+    this.register('psexec.py', psexecHandler);
+    this.register('psexec', psexecHandler);
+
+    const cmeHandler: CommandHandler = (args) => SimulatedCommandAdapters.crackmapexec(args);
+    this.register('crackmapexec', cmeHandler);
+    this.register('cme', cmeHandler);
 
     // 26. PS (VIRTUAL PROCESS TABLE)
     this.register('ps', (_args, ctx) => {

@@ -61,3 +61,16 @@
 - [x] Pristine machine reset workflow restoring machine state, services, sessions, and objectives.
 - [x] Seamless navigation between Machine Catalog (`/machines`), Machine Detail (`/machines/:id`), and Pwnbox Terminal (`/range`).
 - [x] Automated test suite (`src/tests/phase4EcorpMachine.test.ts`) validating end-to-end user attack path, prerequisites, file inspection, privilege escalation, and reset behavior (11 tests).
+
+## Phase 5: IronBank Vault and Corp-DC01 Training Machines
+- [x] Fictional financial application machine (IronBank Vault, 10.10.11.82, Medium) with MySQL database services, API endpoints, and SSH.
+- [x] Constrained parameter-sensitive SQL injection authentication bypass on `/api/login` and query execution debug feedback.
+- [x] Fictional JWT configuration flaws (`alg: none` and weak secret) granting access to `/api/vault` and confidential records.
+- [x] Insecure cron task hijacking scenario (`/opt/ironbank/scripts/backup.sh` writable by `finance_admin`) escalating to root.
+- [x] Active Directory Domain Controller machine (Corp-DC01, 10.10.11.99, Hard) with Kerberos (88), LDAP (389), SMB (445).
+- [x] SMB service enumeration (`ADMIN$`, `C$`, `IPC$`, `SYSVOL`, `Shared`) and legacy MS17-010 EternalBlue vulnerability analysis.
+- [x] Synthetic Kerberoasting learning exercise extracting TGS service ticket hashes for SPN `MSSQLSvc/corp-dc01.omnicorp.local:1433`.
+- [x] Wordlist password recovery with `john` / `hashcat` capturing the Active Directory user flag.
+- [x] Domain privilege escalation via DCSync (`secretsdump.py`) and Pass-the-Hash (`psexec.py`) capturing Domain Admin root flag.
+- [x] Dedicated machine detail views for both targets with tailored tabs, synthetic artifacts, and remediation guidance.
+- [x] Complete automated test suite (`src/tests/phase5IronBankAndCorpDc01.test.ts`) covering all 15 test cases (106 total passing tests).

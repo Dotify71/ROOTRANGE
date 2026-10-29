@@ -30,6 +30,7 @@ export class SimulationEngine {
   private listeners: Set<SimulationEventListener> = new Set();
   private score: number = 0;
   private claimedFlags: Set<string> = new Set();
+  private activeMachineId?: string;
 
   private constructor() {
     this.resetRange();
@@ -69,6 +70,7 @@ export class SimulationEngine {
     this.activeSessions.clear();
     this.score = 0;
     this.claimedFlags.clear();
+    this.activeMachineId = undefined;
 
     for (const m of SIMULATED_MACHINES) {
       const cloned = this.cloneMachineConfig(m);
@@ -180,6 +182,14 @@ export class SimulationEngine {
     );
   }
 
+  public setActiveMachineId(id: string | undefined): void {
+    this.activeMachineId = id;
+  }
+
+  public getActiveMachineId(): string | undefined {
+    return this.activeMachineId;
+  }
+
   public getSubnets(): VirtualSubnet[] {
     return this.subnets;
   }
@@ -216,6 +226,11 @@ export class SimulationEngine {
     const targetMachine = this.getMachine(targetIp);
     if (!targetMachine) {
       return { reachable: false, reason: `Destination host unreachable: No route to host (${targetIp})` };
+    }
+
+    // Direct access if this machine is currently selected as active target in pwnbox
+    if (this.activeMachineId && (targetMachine.id === this.activeMachineId || targetMachine.ip === this.activeMachineId)) {
+      return { reachable: true };
     }
 
     const subnet = this.subnets.find((s) => s.id === targetMachine.subnetId);

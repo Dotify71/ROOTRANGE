@@ -96,7 +96,7 @@ export interface ChallengeObjective {
 export interface EvidenceItem {
   id: string;
   machineId: string;
-  type: 'CREDENTIAL' | 'FLAG' | 'HASH' | 'JWT' | 'LOG' | 'EXPLOIT_PAYLOAD';
+  type: 'CREDENTIAL' | 'FLAG' | 'HASH' | 'JWT' | 'LOG' | 'EXPLOIT_PAYLOAD' | 'VULNERABILITY' | 'NETWORK';
   name: string;
   source: string;
   value: string;

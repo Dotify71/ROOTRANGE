@@ -25,7 +25,18 @@ SCAN TECHNIQUES:
       };
     }
 
-    const targetArg = args.find((a) => !a.startsWith('-')) || '';
+    let targetArg = '';
+    for (let i = 0; i < args.length; i++) {
+      const a = args[i];
+      if ((a === '-p' || a === '-oN' || a === '--script') && i + 1 < args.length) {
+        i++;
+        continue;
+      }
+      if (!a.startsWith('-')) {
+        targetArg = a;
+      }
+    }
+
     if (!targetArg) {
       return { stdout: '', stderr: 'Failed to resolve IP or target. Usage: nmap -sV -sC <ip>', exitCode: 1 };
     }
@@ -61,8 +72,57 @@ Nmap done: 1 IP address (0 hosts up) scanned in 3.00 seconds`,
     // Auto-complete reconnaissance objective if prerequisites met
     if (machine.id === 'ecorp-hr') {
       this.engine.completeObjective(machine.id, 'ecorp-obj-1');
-    } else if (machine.id === 'corp-dc01' && this.engine.isObjectiveUnlocked('dc-obj-1')) {
-      this.engine.completeObjective(machine.id, 'dc-obj-1');
+    } else if (machine.id === 'iron-vault') {
+      if (this.engine.isObjectiveUnlocked('iron-obj-1')) {
+        this.engine.completeObjective('iron-vault', 'iron-obj-1');
+      }
+    } else if (machine.id === 'corp-dc01') {
+      if (this.engine.isObjectiveUnlocked('dc-obj-1')) {
+        this.engine.completeObjective('corp-dc01', 'dc-obj-1');
+      }
+    }
+
+    const rawArgs = args.join(' ');
+    // MS17-010 or SMB Enumeration script on corp-dc01
+    let scriptOutput = '';
+    if (machine.id === 'corp-dc01' && (rawArgs.includes('smb-vuln-ms17-010') || rawArgs.includes('smb-vuln') || rawArgs.includes('vuln'))) {
+      if (this.engine.isObjectiveUnlocked('dc-obj-2')) {
+        this.engine.completeObjective('corp-dc01', 'dc-obj-2');
+      }
+      this.engine.addEvidence({
+        machineId: 'corp-dc01',
+        type: 'VULNERABILITY',
+        name: 'MS17-010 (EternalBlue) SMBv1 RCE Vulnerability',
+        source: 'Nmap Script Scan (smb-vuln-ms17-010.nse)',
+        value: 'CVE-2017-0143: Critical buffer overflow in Microsoft SMBv1 srv.sys driver',
+        description: 'Vulnerable SMBv1 protocol detected on corp-dc01:445.',
+      });
+      scriptOutput = `
+Host script results:
+| smb-vuln-ms17-010: 
+|   VULNERABLE:
+|   Remote Code Execution vulnerability in Microsoft SMBv1 servers (ms17-010)
+|     State: VULNERABLE
+|     IDs:  CVE:CVE-2017-0143
+|     Risk factor: HIGH
+|       A critical remote code execution vulnerability exists in Microsoft SMBv1
+|       srv.sys driver when handling SrvOs2FeaToNt SrvOs2FeaListSize buffer sizes.
+|     Disclosure date: 2017-03-14
+|     References:
+|       https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-0143
+|       https://technet.microsoft.com/en-us/library/security/ms17-010.aspx`;
+    } else if (machine.id === 'corp-dc01' && (rawArgs.includes('smb-enum-shares') || rawArgs.includes('smb-enum'))) {
+      if (this.engine.isObjectiveUnlocked('dc-obj-2')) {
+        this.engine.completeObjective('corp-dc01', 'dc-obj-2');
+      }
+      scriptOutput = `
+Host script results:
+| smb-enum-shares: 
+|   ADMIN$ (Disk, Remote Admin) - Access: DENIED
+|   C$ (Disk, Default share) - Access: DENIED
+|   IPC$ (IPC, Remote IPC) - Access: READ
+|   SYSVOL (Disk, Logon server share) - Access: READ
+|   Shared (Disk, Corporate IT Share) - Access: READ`;
     }
 
     const portRows = machine.ports
@@ -76,7 +136,7 @@ Host is up (0.024s latency).
 Not shown: 997 closed tcp ports (reset)
 
 PORT       STATE    SERVICE          VERSION
-${portRows}
+${portRows}${scriptOutput}
 
 Service Info: OS: ${machine.os}; OS CPE: cpe:/o:linux:linux_kernel
 
@@ -198,10 +258,10 @@ Finished
 
     for (let i = 0; i < args.length; i++) {
       const a = args[i];
-      if ((a === '-X' || a === '--request') && args[i + 1]) {
+      if ((a === '-X' || a === '--request') && args[i + 1] !== undefined) {
         method = args[i + 1].toUpperCase();
         i++;
-      } else if ((a === '-d' || a === '--data') && args[i + 1]) {
+      } else if ((a === '-d' || a === '--data') && args[i + 1] !== undefined) {
         data = args[i + 1];
         if (method === 'GET') method = 'POST';
         i++;
@@ -257,6 +317,18 @@ Finished
       }
     }
 
+    if (machine.id === 'iron-vault') {
+      if (parsedPath.includes('/api/login') && res.statusCode === 200 && res.body.includes('token')) {
+        if (this.engine.isObjectiveUnlocked('iron-obj-2')) {
+          this.engine.completeObjective('iron-vault', 'iron-obj-2');
+        }
+      } else if (parsedPath.includes('/api/vault') && res.statusCode === 200 && res.body.includes('ROOTRANGE{')) {
+        if (this.engine.isObjectiveUnlocked('iron-obj-3')) {
+          this.engine.completeObjective('iron-vault', 'iron-obj-3');
+        }
+      }
+    }
+
     return {
       stdout: res.body,
       stderr: '',
@@ -306,8 +378,8 @@ Finished
       return { stdout: '', stderr: `Permission denied (publickey,password).`, exitCode: 1 };
     }
 
-    // Check if user has an authorized key or is alex
-    if (user === 'alex') {
+    // Check if user has an authorized key or is alex / finance_admin
+    if (user === 'alex' && machine.id === 'ecorp-hr') {
       this.engine.createSession(machine.id, 'SSH', 'alex', '/home/alex');
       return {
         stdout: `Welcome to ${machine.name} (${machine.osVersion})
@@ -324,6 +396,29 @@ alex@${machine.hostname}:~$ `,
           gid: targetUser.gid,
           host: machine.hostname,
           cwd: '/home/alex',
+        },
+        soundTrigger: 'connect',
+        targetCompromised: 'USER',
+      };
+    }
+
+    if (user === 'finance_admin' && (machine.id === 'iron-vault' || targetHost.includes('10.10.11.82') || targetHost.includes('ironbank'))) {
+      this.engine.createSession(machine.id, 'SSH', 'finance_admin', '/home/finance_admin');
+      return {
+        stdout: `Welcome to ${machine.name} (${machine.osVersion})
+ * Financial Core Ledger Node (Debian bullseye)
+ * Internal Audit: Scheduled cron maintenance active
+Last login: Thu Oct 29 07:11:02 2026 from 10.10.14.22
+finance_admin@${machine.hostname}:~$ `,
+        stderr: '',
+        exitCode: 0,
+        enterShell: {
+          user: 'finance_admin',
+          uid: targetUser.uid,
+          group: targetUser.groups[0] || 'finance_admin',
+          gid: targetUser.gid,
+          host: machine.hostname,
+          cwd: '/home/finance_admin',
         },
         soundTrigger: 'connect',
         targetCompromised: 'USER',
@@ -645,10 +740,455 @@ $ `,
       };
     }
 
+    const isIronBank = ctx.hostname === 'iron-vault' || ctx.user === 'finance_admin';
+    if (isIronBank) {
+      return {
+        stdout: `                            Linux Privilege Escalation Awesome Script
+                                         by @carlospolop
+
+  [+] OS: Linux version 5.10.0-28-amd64 (Debian 11 bullseye)
+  [+] User: ${ctx.user} (uid=${ctx.uid})
+  [+] Hostname: ${ctx.hostname}
+
+  [+] CRON JOBS:
+  * * * * * root /opt/ironbank/scripts/backup.sh >/dev/null 2>&1
+
+  [+] VULNERABLE WRITABLE CRON TASK:
+  ╔═════════════════════════════════════════════════════════════════════════╗
+  ║ [!] /opt/ironbank/scripts/backup.sh is writable by group finance_admin! ║
+  ║     -rwxrwxr-x 1 root finance_admin 260 Oct 29 07:00                    ║
+  ╚═════════════════════════════════════════════════════════════════════════╝
+  [VULNERABLE CRON HIJACKING]: Script executed by root every 60 seconds.
+  Execute or overwrite: bash /opt/ironbank/scripts/backup.sh`,
+        stderr: '',
+        exitCode: 0,
+      };
+    }
+
     return {
       stdout: `[+] LinPEAS Quick Scan for ${ctx.hostname}\n[+] Current user: ${ctx.user}\n[+] No obvious automated privesc vectors detected.`,
       stderr: '',
       exitCode: 0,
     };
+  }
+
+  /**
+   * 10. SCRIPT EXECUTION / CRON HIJACK ADAPTER
+   */
+  public static executeScript(args: string[], ctx: ExecutionContext): ExecutionOutput {
+    const raw = args.join(' ');
+    if (raw.includes('backup.sh')) {
+      if (ctx.hostname === 'iron-vault' || ctx.user === 'finance_admin') {
+        if (this.engine.isObjectiveUnlocked('iron-obj-4')) {
+          this.engine.completeObjective('iron-vault', 'iron-obj-4');
+        }
+        this.engine.setMachineCompromiseLevel('iron-vault', 'ROOT');
+        this.engine.addEvidence({
+          machineId: 'iron-vault',
+          type: 'CREDENTIAL',
+          name: 'Root Compromise via Cron Hijacking',
+          source: '/opt/ironbank/scripts/backup.sh execution',
+          value: 'ROOTRANGE{r00t_cr0n_ov3rwr1t3_pwn4g3}',
+          description: 'Privilege escalation to root achieved by modifying/running root-executed cronjob script.',
+        });
+
+        return {
+          stdout: `[+] Executing /opt/ironbank/scripts/backup.sh under root cron context...
+[+] Cron task spawned with effective UID 0 (root)!
+[+] ROOT COMPROMISE ACHIEVED: Welcome to root shell!
+root@iron-vault:/root# `,
+          stderr: '',
+          exitCode: 0,
+          enterShell: {
+            user: 'root',
+            uid: 0,
+            group: 'root',
+            gid: 0,
+            host: 'iron-vault',
+            cwd: '/root',
+          },
+          soundTrigger: 'connect',
+          targetCompromised: 'ROOT',
+        };
+      }
+    }
+
+    const targetFile = args[0];
+    if (targetFile) {
+      const readRes = ctx.fs.readFile(ctx.cwd, targetFile, ctx.uid, ctx.gid);
+      if (!readRes.success) {
+        return { stdout: '', stderr: `bash: ${targetFile}: No such file or directory`, exitCode: 127 };
+      }
+      return { stdout: `[bash] executed ${targetFile}`, stderr: '', exitCode: 0 };
+    }
+
+    return { stdout: '', stderr: 'bash: missing script argument', exitCode: 1 };
+  }
+
+  /**
+   * 11. SMBCLIENT ADAPTER
+   */
+  public static smbclient(args: string[]): ExecutionOutput {
+    if (args.length === 0 || args.includes('-h') || args.includes('--help')) {
+      return {
+        stdout: `Version 4.17.12-Debian
+Usage: smbclient [-?|--help] [-L|--list=HOST] [//HOST/SHARE] [password]
+Options:
+  -L, --list=HOST              Get a list of shares available on a host
+  -N, --no-pass                Don't ask for a password
+  -U, --user=USERNAME          Set the network username`,
+        stderr: '',
+        exitCode: 0,
+      };
+    }
+
+    const raw = args.join(' ');
+    const reachCheck = this.engine.canReachIp('10.10.11.99');
+    if (!reachCheck.reachable) {
+      return { stdout: '', stderr: `Connection to 10.10.11.99 failed: ${reachCheck.reason || 'Host unreachable'}`, exitCode: 1 };
+    }
+
+    if (raw.includes('-L') || raw.includes('--list')) {
+      if (this.engine.isObjectiveUnlocked('dc-obj-2')) {
+        this.engine.completeObjective('corp-dc01', 'dc-obj-2');
+      }
+
+      this.engine.addEvidence({
+        machineId: 'corp-dc01',
+        type: 'NETWORK',
+        name: 'Discovered SMB Shares',
+        source: 'smbclient -L //10.10.11.99',
+        value: 'ADMIN$, C$, IPC$, SYSVOL, Shared',
+        description: 'Anonymous SMB enumeration revealed accessible shares on corp-dc01:445.',
+      });
+
+      return {
+        stdout: `Sharename       Type      Comment
+---------       ----      -------
+ADMIN$          Disk      Remote Admin
+C$              Disk      Default share
+IPC$            IPC       Remote IPC
+SYSVOL          Disk      Logon server share
+Shared          Disk      Corporate IT Documentation & Service Accounts
+
+SMB1 disabled -- no; SMB2/3 enabled -- yes
+10.10.11.99: Domain=[OMNICORP] OS=[Windows Server 2019 Standard 17763] Server=[Windows Server 2019 Standard 6.3]`,
+        stderr: '',
+        exitCode: 0,
+        soundTrigger: 'scan',
+      };
+    }
+
+    if (raw.includes('Shared') || raw.includes('SYSVOL')) {
+      if (this.engine.isObjectiveUnlocked('dc-obj-2')) {
+        this.engine.completeObjective('corp-dc01', 'dc-obj-2');
+      }
+
+      this.engine.addEvidence({
+        machineId: 'corp-dc01',
+        type: 'CREDENTIAL',
+        name: 'Service Account SPN Record (svc_backup)',
+        source: 'smbclient //10.10.11.99/Shared/ServiceAccounts.txt',
+        value: 'SPN: MSSQLSvc/corp-dc01.omnicorp.local:1433, Account: svc_backup, Group: Backup Operators',
+        description: 'Discovered Kerberoastable SPN with legacy RC4 encryption enabled.',
+      });
+
+      return {
+        stdout: `Connected to \\\\10.10.11.99\\Shared (anonymous session)
+smb: \\> ls
+  .                                   D        0  Thu Oct 29 07:00:00 2026
+  ..                                  D        0  Thu Oct 29 07:00:00 2026
+  ServiceAccounts.txt                 A      380  Thu Oct 29 07:00:00 2026
+  Groups.xml                          A      620  Thu Oct 29 07:00:00 2026
+
+smb: \\> get ServiceAccounts.txt
+getting file \\ServiceAccounts.txt of size 380 as ServiceAccounts.txt (18.5 KBs/s)
+
+[+] CONTENT OF ServiceAccounts.txt:
+OMNICORP IT SERVICE ACCOUNTS DIRECTORY
+--------------------------------------
+Account Name: svc_backup
+Domain: OMNICORP.LOCAL
+ServicePrincipalName: MSSQLSvc/corp-dc01.omnicorp.local:1433
+Member Of: Backup Operators, Domain Users
+Kerberos Pre-Auth: Disabled
+Supported Encryption: RC4-HMAC (etype 23)
+Notice: Service ticket requests do not require admin credentials.`,
+        stderr: '',
+        exitCode: 0,
+        soundTrigger: 'connect',
+      };
+    }
+
+    return { stdout: '', stderr: 'tree connect failed: NT_STATUS_ACCESS_DENIED', exitCode: 1 };
+  }
+
+  /**
+   * 12. GETUSERSPNS (KERBEROASTING) ADAPTER
+   */
+  public static getUserSPNs(args: string[], ctx: ExecutionContext): ExecutionOutput {
+    const raw = args.join(' ');
+    if (args.length === 0 || args.includes('-h') || args.includes('--help')) {
+      return {
+        stdout: `Impacket v0.11.0 - Copyright 2023 Fortra
+usage: GetUserSPNs.py [-h] [-request] [-dc-ip ip address] target
+Queries target domain for SPNs that are running under user accounts and outputs hashes for offline cracking.`,
+        stderr: '',
+        exitCode: 0,
+      };
+    }
+
+    const reachCheck = this.engine.canReachIp('10.10.11.99');
+    if (!reachCheck.reachable) {
+      return { stdout: '', stderr: `[-] Connection failed: ${reachCheck.reason || 'Target domain unreachable'}`, exitCode: 1 };
+    }
+
+    if (raw.includes('-request') || raw.includes('omnicorp') || raw.includes('10.10.11.99')) {
+      const ticketHash = '$krb5tgs$23$*svc_backup*OMNICORP.LOCAL*MSSQLSvc/corp-dc01.omnicorp.local:1433*$52f9b8c19a4e3d02$8a3b5c7d6e4f1a2b0c9e8d7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d';
+      
+      // Save hash into /tmp/svc_backup.hash
+      ctx.fs.writeFile('/tmp', 'svc_backup.hash', ticketHash + '\n', 1000, 1000, true);
+
+      this.engine.addEvidence({
+        machineId: 'corp-dc01',
+        type: 'CREDENTIAL',
+        name: 'Kerberos TGS-REP Hash (svc_backup)',
+        source: 'GetUserSPNs.py -request omnicorp.local/',
+        value: ticketHash,
+        description: 'Kerberoastable service ticket hash extracted for MSSQLSvc SPN.',
+      });
+
+      return {
+        stdout: `Impacket v0.11.0 - Copyright 2023 Fortra
+
+ServicePrincipalName                     Name        MemberOf                           PasswordLastSet             LastLogon
+---------------------------------------  ----------  ---------------------------------  --------------------------  -------------------
+MSSQLSvc/corp-dc01.omnicorp.local:1433   svc_backup  CN=Backup Operators,CN=Users,...   2026-01-15 11:22:04.148123  2026-10-28 14:02:11
+
+[*] Requesting TGS ticket for SPN 'MSSQLSvc/corp-dc01.omnicorp.local:1433' ...
+[*] Extracted Kerberos TGS-REP hash (etype 23 - RC4-HMAC):
+
+${ticketHash}
+
+[+] Ticket hash saved to /tmp/svc_backup.hash`,
+        stderr: '',
+        exitCode: 0,
+        soundTrigger: 'scan',
+      };
+    }
+
+    return { stdout: '', stderr: '[-] No entries found.', exitCode: 1 };
+  }
+
+  /**
+   * 13. JOHN THE RIPPER / HASHCAT ADAPTER
+   */
+  public static john(args: string[]): ExecutionOutput {
+    if (args.length === 0 || args.includes('-h') || args.includes('--help')) {
+      return {
+        stdout: `John the Ripper 1.9.0-jumbo-1 (x86_64)
+Usage: john [OPTIONS] [PASSWORD-FILES]
+--wordlist=FILE    Wordlist mode, read words from FILE
+--format=NAME      Force hash type (e.g. krb5tgs, sha512crypt)`,
+        stderr: '',
+        exitCode: 0,
+      };
+    }
+
+    const raw = args.join(' ');
+    if (raw.includes('svc_backup') || raw.includes('krb5tgs') || raw.includes('hash')) {
+      if (this.engine.isObjectiveUnlocked('dc-obj-3')) {
+        this.engine.completeObjective('corp-dc01', 'dc-obj-3');
+      }
+      this.engine.setMachineCompromiseLevel('corp-dc01', 'USER');
+
+      this.engine.addEvidence({
+        machineId: 'corp-dc01',
+        type: 'CREDENTIAL',
+        name: 'Cracked svc_backup Password',
+        source: 'John the Ripper (rockyou.txt dictionary attack)',
+        value: 'svc_backup:BackupService2026!',
+        description: 'Offline password recovery of Kerberoasted TGS service ticket hash.',
+      });
+
+      return {
+        stdout: `Loaded 1 password hash (krb5tgs, Kerberos 5 TGS-REP etype 23 [MD4 HMAC-MD5 RC4])
+Will run 8 OpenMP threads
+Press 'q' or Ctrl-C to abort, almost any other key for status
+BackupService2026! ($krb5tgs$23$*svc_backup*OMNICORP.LOCAL)
+1g 0:00:00:01 DONE (2026-10-29 07:44) 0.8196g/s 409600p/s 409600c/s 409600C/s
+Use the "--show" option to display all of the cracked passwords reliably
+Session completed
+
+[+] Kerberoasting Success! Cracked password for svc_backup: BackupService2026!
+[+] USER FLAG: ROOTRANGE{u53r_k3rb3r04st_t1ck3t_h4sh}`,
+        stderr: '',
+        exitCode: 0,
+        soundTrigger: 'scan',
+        targetCompromised: 'USER',
+      };
+    }
+
+    return { stdout: 'Loaded 0 password hashes.', stderr: '', exitCode: 0 };
+  }
+
+  /**
+   * 14. SECRETSDUMP ADAPTER (DCSYNC)
+   */
+  public static secretsdump(args: string[]): ExecutionOutput {
+    if (args.length === 0 || args.includes('-h') || args.includes('--help')) {
+      return {
+        stdout: `Impacket v0.11.0 - Copyright 2023 Fortra
+usage: secretsdump.py [-h] [-hashes LMHASH:NTHASH] target
+Performs various techniques to dump secrets from the remote machine without executing any agent there.`,
+        stderr: '',
+        exitCode: 0,
+      };
+    }
+
+    const raw = args.join(' ');
+    const reachCheck = this.engine.canReachIp('10.10.11.99');
+    if (!reachCheck.reachable) {
+      return { stdout: '', stderr: `[-] Connection failed: ${reachCheck.reason || 'Target domain unreachable'}`, exitCode: 1 };
+    }
+
+    if (raw.includes('svc_backup') && (raw.includes('BackupService2026!') || raw.includes(':'))) {
+      this.engine.addEvidence({
+        machineId: 'corp-dc01',
+        type: 'CREDENTIAL',
+        name: 'Domain Administrator NTLM Hash',
+        source: 'secretsdump.py (DRSUAPI DCSync method)',
+        value: 'Administrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::',
+        description: 'DCSync replication using Backup Operators privileges to dump Active Directory NTDS.dit hashes.',
+      });
+
+      return {
+        stdout: `Impacket v0.11.0 - Copyright 2023 Fortra
+
+[*] Target system bootKey: 0x4a9b2c1d8e7f0123456789abcdef0123
+[*] Dumping Domain Credentials (DRSUAPI method - DCSync)...
+[*] Using SeBackupPrivilege domain replication context...
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:49b1a82f6e5c3d2b1a0f9e8d7c6b5a4e:::
+svc_backup:1100:aad3b435b51404eeaad3b435b51404ee:8c2e4f1a6b9d3c5e7a1f0b2d4e6c8a0b:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+[*] Cleaning up...
+[+] DCSync complete: Domain Admin NTLM Hash extracted!`,
+        stderr: '',
+        exitCode: 0,
+        soundTrigger: 'scan',
+      };
+    }
+
+    return { stdout: '', stderr: '[-] DRSUAPI DsBindWithCred to 10.10.11.99 failed: STATUS_LOGON_FAILURE', exitCode: 1 };
+  }
+
+  /**
+   * 15. PSEXEC ADAPTER (PASS-THE-HASH)
+   */
+  public static psexec(args: string[]): ExecutionOutput {
+    if (args.length === 0 || args.includes('-h') || args.includes('--help')) {
+      return {
+        stdout: `Impacket v0.11.0 - Copyright 2023 Fortra
+usage: psexec.py [-h] [-hashes LMHASH:NTHASH] target [command]
+PSEXEC-like functionality example using RemComSvc.`,
+        stderr: '',
+        exitCode: 0,
+      };
+    }
+
+    const raw = args.join(' ');
+    const reachCheck = this.engine.canReachIp('10.10.11.99');
+    if (!reachCheck.reachable) {
+      return { stdout: '', stderr: `[-] Connection failed: ${reachCheck.reason || 'Target domain unreachable'}`, exitCode: 1 };
+    }
+
+    if (raw.includes('31d6cfe0d16ae931b73c59d7e0c089c0') || (raw.includes('Administrator') && raw.includes('corp-dc01'))) {
+      if (this.engine.isObjectiveUnlocked('dc-obj-4')) {
+        this.engine.completeObjective('corp-dc01', 'dc-obj-4');
+      }
+      this.engine.setMachineCompromiseLevel('corp-dc01', 'ROOT');
+
+      return {
+        stdout: `Impacket v0.11.0 - Copyright 2023 Fortra
+
+[*] Requesting shares on 10.10.11.99.....
+[*] Found writable share ADMIN$
+[*] Uploading file PSEXESVC.exe
+[*] Initializing service PSEXESVC on 10.10.11.99.....
+[*] Starting service PSEXESVC.....
+[+] Opening interactive cmd.exe on 10.10.11.99
+
+Microsoft Windows [Version 10.0.17763.4974]
+(c) 2019 Microsoft Corporation. All rights reserved.
+
+C:\\Windows\\system32> whoami
+nt authority\\system
+
+C:\\Windows\\system32> type C:\\Users\\Administrator\\Desktop\\root.txt
+ROOTRANGE{r00t_d0m41n_4dm1n_g0d_m0d3}`,
+        stderr: '',
+        exitCode: 0,
+        enterShell: {
+          user: 'Administrator',
+          uid: 500,
+          group: 'Domain Admins',
+          gid: 512,
+          host: 'corp-dc01',
+          cwd: 'C:\\Windows\\system32',
+        },
+        soundTrigger: 'connect',
+        targetCompromised: 'ROOT',
+      };
+    }
+
+    return { stdout: '', stderr: '[-] Could not connect to ADMIN$ on 10.10.11.99: STATUS_ACCESS_DENIED', exitCode: 1 };
+  }
+
+  /**
+   * 16. CRACKMAPEXEC ADAPTER
+   */
+  public static crackmapexec(args: string[]): ExecutionOutput {
+    if (args.length === 0 || args.includes('-h') || args.includes('--help')) {
+      return {
+        stdout: `CrackMapExec v5.4.0 (The Swiss Army Knife of pentesting networks)
+usage: crackmapexec <protocol> <target(s)> [options]
+Protocols: smb, winrm, ldap, ssh, mssql`,
+        stderr: '',
+        exitCode: 0,
+      };
+    }
+
+    const raw = args.join(' ');
+    if (raw.includes('10.10.11.99') || raw.includes('corp-dc01')) {
+      if (raw.includes('svc_backup') && raw.includes('BackupService2026!')) {
+        return {
+          stdout: `SMB         10.10.11.99     445    CORP-DC01        [*] Windows Server 2019 Standard 17763 x64 (name:CORP-DC01) (domain:omnicorp.local) (signing:True) (SMBv1:True)
+SMB         10.10.11.99     445    CORP-DC01        [+] omnicorp.local\\svc_backup:BackupService2026! (Pwn3d!)`,
+          stderr: '',
+          exitCode: 0,
+          soundTrigger: 'scan',
+        };
+      }
+
+      if (raw.includes('--shares')) {
+        return {
+          stdout: `SMB         10.10.11.99     445    CORP-DC01        [*] Windows Server 2019 Standard 17763 x64 (domain:omnicorp.local)
+SMB         10.10.11.99     445    CORP-DC01        [+] Enumerated shares:
+SMB         10.10.11.99     445    CORP-DC01        Share           Permissions     Remark
+SMB         10.10.11.99     445    CORP-DC01        -----           -----------     ------
+SMB         10.10.11.99     445    CORP-DC01        ADMIN$                          Remote Admin
+SMB         10.10.11.99     445    CORP-DC01        C$                              Default share
+SMB         10.10.11.99     445    CORP-DC01        IPC$            READ            Remote IPC
+SMB         10.10.11.99     445    CORP-DC01        SYSVOL          READ            Logon server share
+SMB         10.10.11.99     445    CORP-DC01        Shared          READ            Corporate IT Documentation`,
+          stderr: '',
+          exitCode: 0,
+          soundTrigger: 'scan',
+        };
+      }
+    }
+
+    return { stdout: '[-] No target response.', stderr: '', exitCode: 1 };
   }
 }

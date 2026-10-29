@@ -47,7 +47,7 @@ export const INITIAL_MACHINES: TargetMachine[] = [
   },
   {
     id: 'iron-vault',
-    name: 'IronBank API',
+    name: 'IronBank Vault',
     ip: '10.10.11.82',
     os: 'Linux',
     difficulty: 'Medium',
@@ -68,7 +68,7 @@ export const INITIAL_MACHINES: TargetMachine[] = [
   },
   {
     id: 'corp-dc01',
-    name: 'OmniCorp DC01',
+    name: 'Corp-DC01',
     ip: '10.10.11.99',
     os: 'ActiveDirectory',
     difficulty: 'Hard',
@@ -144,7 +144,10 @@ export const useGameStore = create<GameState>((set, get) => {
     events: [],
     evidence: [],
 
-    setActiveMachine: (id: string) => set({ activeMachineId: id }),
+    setActiveMachine: (id: string) => {
+      engine.setActiveMachineId(id);
+      set({ activeMachineId: id });
+    },
 
     updateCompromiseLevel: (machineId: string, level: 'RECON' | 'USER' | 'ROOT') => {
       engine.setMachineCompromiseLevel(machineId, level);
@@ -255,10 +258,12 @@ export const useGameStore = create<GameState>((set, get) => {
       const original = INITIAL_MACHINES.find((m) => m.id === machineId);
       if (!original) return;
 
+      const origNode = INITIAL_NETWORK_NODES.find((n) => n.id === machineId);
+
       set((state) => ({
         machines: state.machines.map((m) => (m.id === machineId ? { ...original } : m)),
         networkNodes: state.networkNodes.map((n) =>
-          n.id === machineId ? { ...n, status: 'discovered' } : n
+          n.id === machineId ? { ...n, status: origNode ? origNode.status : 'discovered' } : n
         ),
       }));
     },

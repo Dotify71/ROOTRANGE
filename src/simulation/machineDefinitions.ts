@@ -296,7 +296,7 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
   },
   {
     id: 'iron-vault',
-    name: 'IronBank API',
+    name: 'IronBank Vault',
     hostname: 'iron-vault',
     ip: '10.10.11.82',
     subnetId: 'internal-services',
@@ -381,7 +381,7 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
         methods: ['GET'],
         statusCode: 200,
         contentType: 'application/json',
-        responseBody: '{"api":"IronBank Core Financial Ledger API","version":"1.4.0","endpoints":["/api/login","/api/vault","/api/transfer"]}',
+        responseBody: '{"api":"IronBank Core Financial Ledger API","version":"1.4.0","endpoints":["/api/login","/api/vault","/api/users","/api/transfer","/api/db-status"]}',
       },
       {
         path: '/api/login',
@@ -390,9 +390,29 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
         contentType: 'application/json',
         responseBody: '{"error":"Missing credentials. Usage: POST { username, password }"}',
         handler: (req) => {
-          const raw = JSON.stringify(req);
-          // SQL Injection detection: admin' OR 1=1-- or ' OR '1'='1
-          if (raw.includes("' OR '1'='1") || raw.includes("' OR 1=1") || raw.includes("admin'--")) {
+          const bodyStr = typeof req.body === 'string' ? req.body : JSON.stringify(req.body || req);
+          if (!bodyStr || bodyStr === '{}' || bodyStr === '""') {
+            return {
+              statusCode: 400,
+              contentType: 'application/json',
+              body: JSON.stringify({ error: 'Missing credentials. Usage: POST /api/login with JSON { username, password }' }),
+            };
+          }
+
+          // SQL Injection detection on username parameter:
+          // admin' OR 1=1-- or ' OR '1'='1 or admin'-- or ' UNION SELECT
+          const isSqli =
+            bodyStr.includes("' OR '1'='1") ||
+            bodyStr.includes("' OR 1=1") ||
+            bodyStr.includes("admin'--") ||
+            bodyStr.includes("admin' OR") ||
+            bodyStr.includes("' OR ''='") ||
+            bodyStr.includes("admin'#") ||
+            bodyStr.includes("' OR 1=1#") ||
+            bodyStr.includes("UNION SELECT") ||
+            bodyStr.includes("union select");
+
+          if (isSqli) {
             return {
               statusCode: 200,
               contentType: 'application/json',
@@ -402,6 +422,12 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
                 user: 'admin',
                 role: 'finance_admin',
                 token: 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VyIjoiYWRtaW4iLCJyb2xlIjoiZmluYW5jZV9hZG1pbiJ9.',
+                database_debug: {
+                  query: "SELECT id, username, role, password_hash FROM users WHERE username = 'admin' OR 1=1 --' AND password = '***'",
+                  matched_rows: 1,
+                  vulnerability: 'CWE-89: Direct string concatenation into SQL query',
+                  remediation: 'Use parameterized queries: db.execute("SELECT ... WHERE username = ? AND password = ?", [username, password])',
+                },
               }),
               triggerEvent: {
                 type: 'VULNERABILITY_IDENTIFIED',
@@ -410,6 +436,7 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
               },
             };
           }
+
           return {
             statusCode: 401,
             contentType: 'application/json',
@@ -425,15 +452,29 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
         responseBody: '{"error":"Unauthorized: Missing Bearer Token"}',
         handler: (req) => {
           const auth = req.headers['authorization'] || req.headers['Authorization'] || '';
-          if (auth.includes('eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0') || auth.includes('Bearer admin_jwt')) {
+          if (!auth) {
+            return {
+              statusCode: 401,
+              contentType: 'application/json',
+              body: JSON.stringify({ error: 'Unauthorized: Missing Bearer Token' }),
+            };
+          }
+
+          if (
+            auth.includes('eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0') ||
+            auth.includes('Bearer admin_jwt') ||
+            auth.includes('finance_admin')
+          ) {
             return {
               statusCode: 200,
               contentType: 'application/json',
               body: JSON.stringify({
                 vault_id: 'VAULT-SEC-9941',
-                balance: '$42,500,000.00 USD',
+                organization: 'IronBank Global Custody & Clearing',
+                reserve_balance: '$42,500,000.00 USD',
                 user_flag: 'ROOTRANGE{u53r_jwt_f0rg3ry_b4nk_l00t}',
-                confidential_cron_memo: 'Cleanup job /opt/scripts/cleanup.sh runs every 60 seconds as root.',
+                confidential_cron_memo:
+                  'Automated ledger backup job: /opt/ironbank/scripts/backup.sh runs every 60 seconds as root via /etc/cron.d/vault-backup. Backup script is maintained by dev team with write permissions.',
               }),
               triggerEvent: {
                 type: 'INITIAL_ACCESS_GRANTED',
@@ -442,6 +483,7 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
               },
             };
           }
+
           return {
             statusCode: 403,
             contentType: 'application/json',
@@ -449,13 +491,75 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
           };
         },
       },
+      {
+        path: '/api/users',
+        methods: ['GET'],
+        statusCode: 200,
+        contentType: 'application/json',
+        responseBody: '{"error":"Unauthorized"}',
+        handler: (req) => {
+          const auth = req.headers['authorization'] || req.headers['Authorization'] || '';
+          if (!auth) {
+            return {
+              statusCode: 401,
+              contentType: 'application/json',
+              body: JSON.stringify({ error: 'Unauthorized: Authentication required' }),
+            };
+          }
+          return {
+            statusCode: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              users: [
+                { id: 1, username: 'admin', role: 'finance_admin', email: 'admin@ironbank.htb' },
+                { id: 2, username: 'finance_admin', role: 'finance_admin', email: 'finance@ironbank.htb', ssh_enabled: true },
+                { id: 3, username: 'node_app', role: 'service', email: 'service@ironbank.htb' },
+              ],
+            }),
+          };
+        },
+      },
+      {
+        path: '/api/transfer',
+        methods: ['POST'],
+        statusCode: 200,
+        contentType: 'application/json',
+        responseBody: '{"error":"Unauthorized"}',
+        handler: (req) => {
+          const auth = req.headers['authorization'] || req.headers['Authorization'] || '';
+          if (!auth) {
+            return {
+              statusCode: 401,
+              contentType: 'application/json',
+              body: JSON.stringify({ error: 'Unauthorized: Bearer token required for wire transfers' }),
+            };
+          }
+          return {
+            statusCode: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              tx_id: 'TX-' + Math.floor(Math.random() * 900000 + 100000),
+              status: 'APPROVED',
+              timestamp: new Date().toISOString(),
+              message: 'Transfer processed by IronBank Clearing Engine',
+            }),
+          };
+        },
+      },
+      {
+        path: '/api/db-status',
+        methods: ['GET'],
+        statusCode: 200,
+        contentType: 'application/json',
+        responseBody: '{"status":"online","db":"MySQL 8.0.28","database":"ironbank_db","pool_connections":5}',
+      },
     ],
     objectives: [
       {
         id: 'iron-obj-1',
         title: 'Discover Internal Banking Subnet',
-        description: 'Enumerate internal routes through the DMZ to locate IronBank API at 10.10.11.82.',
-        prerequisites: ['ecorp-obj-5'],
+        description: 'Scan 10.10.11.82 to locate OpenSSH (22), Express API (8080), and MySQL (3306).',
+        prerequisites: [],
         completed: false,
         xp: 15,
         category: 'RECON',
@@ -463,7 +567,7 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
       {
         id: 'iron-obj-2',
         title: 'SQL Injection Authentication Bypass',
-        description: 'Exploit SQL injection on /api/login endpoint to bypass authentication.',
+        description: 'Exploit SQL injection on /api/login endpoint to bypass authentication and obtain JWT token.',
         prerequisites: ['iron-obj-1'],
         completed: false,
         xp: 25,
@@ -472,7 +576,7 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
       {
         id: 'iron-obj-3',
         title: 'JWT Forgery & User Flag',
-        description: 'Forge JWT token with algorithm "none" to access /api/vault and capture the user flag.',
+        description: 'Access /api/vault with forged admin token to extract vault ledger and capture the user flag.',
         prerequisites: ['iron-obj-2'],
         completed: false,
         xp: 25,
@@ -481,7 +585,7 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
       {
         id: 'iron-obj-4',
         title: 'Cronjob Hijacking & Root Flag',
-        description: 'Hijack the root-owned scheduled cleanup script to compromise the system and capture the root flag.',
+        description: 'Hijack the root-owned scheduled backup script to compromise the system and capture the root flag.',
         prerequisites: ['iron-obj-3'],
         completed: false,
         xp: 35,
@@ -491,7 +595,7 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
   },
   {
     id: 'corp-dc01',
-    name: 'OmniCorp DC01',
+    name: 'Corp-DC01',
     hostname: 'corp-dc01',
     ip: '10.10.11.99',
     subnetId: 'ad-forest',
@@ -499,8 +603,8 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
     osVersion: 'Windows Server 2019 Standard (OS Build 17763.4974)',
     difficulty: 'Hard',
     points: { user: 30, root: 40 },
-    description: 'Enterprise Windows Domain Controller vulnerable to SMB relay, Kerberoasting, and domain admin ticket hijacking via Mimikatz.',
-    cves: ['CVE-2020-1472 (ZeroLogon)', 'Kerberoasting TGS Hashes'],
+    description: 'Enterprise Windows Domain Controller vulnerable to SMB share exposure, MS17-010 legacy flaw, Kerberoasting service account hashes, and DCSync domain admin escalation.',
+    cves: ['CVE-2017-0143 (MS17-010 EternalBlue)', 'Kerberoasting (TGS-REP RC4-HMAC)', 'DCSync / DRSUAPI Domain Admin Compromise'],
     initialCompromiseLevel: 'NONE',
     userFlag: 'ROOTRANGE{u53r_k3rb3r04st_t1ck3t_h4sh}',
     rootFlag: 'ROOTRANGE{r00t_d0m41n_4dm1n_g0d_m0d3}',
@@ -563,7 +667,7 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
         home: 'C:\\Users\\svc_backup',
         shell: 'cmd.exe',
         password: 'BackupService2026!',
-        groups: ['Domain Users'],
+        groups: ['Domain Users', 'Backup Operators'],
       },
     ],
     processes: [
@@ -577,25 +681,34 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
         id: 'dc-obj-1',
         title: 'Active Directory Forest Discovery',
         description: 'Scan 10.10.11.99 to discover Kerberos (88), LDAP (389), and SMB (445).',
-        prerequisites: ['iron-obj-3'],
+        prerequisites: [],
         completed: false,
         xp: 20,
         category: 'RECON',
       },
       {
         id: 'dc-obj-2',
-        title: 'Kerberoasting Attack',
-        description: 'Request service ticket for svc_backup SPN and crack ticket hash to obtain user flag.',
+        title: 'SMB Share Enumeration & MS17-010 Audit',
+        description: 'Enumerate SMB shares and audit MS17-010 legacy vulnerability to discover IT service account artifacts.',
         prerequisites: ['dc-obj-1'],
+        completed: false,
+        xp: 25,
+        category: 'ENUMERATION',
+      },
+      {
+        id: 'dc-obj-3',
+        title: 'Kerberoasting Attack & User Flag',
+        description: 'Request service ticket for svc_backup SPN and crack ticket hash with rockyou.txt to capture the user flag.',
+        prerequisites: ['dc-obj-2'],
         completed: false,
         xp: 30,
         category: 'EXPLOITATION',
       },
       {
-        id: 'dc-obj-3',
-        title: 'Domain Admin Ticket Hijack (Root Flag)',
-        description: 'Escalate privileges to Domain Admin to compromise OmniCorp DC01 and capture the root flag.',
-        prerequisites: ['dc-obj-2'],
+        id: 'dc-obj-4',
+        title: 'Domain Admin DCSync Escalation & Root Flag',
+        description: 'Leverage Backup Operators DCSync privileges to dump Domain Admin credentials and capture the root flag.',
+        prerequisites: ['dc-obj-3'],
         completed: false,
         xp: 40,
         category: 'POST_EXPLOIT',

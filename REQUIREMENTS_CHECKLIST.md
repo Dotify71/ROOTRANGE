@@ -33,3 +33,8 @@
 | **REQ-29** | Synthetic Source Code & Artifacts | **Verified** | `Log4jAuditLogger.java`, `pom.xml`, `/var/www/html/config.php`, and `/etc/sudoers.d/alex` in virtual FS with POSIX boundaries. |
 | **REQ-30** | Educational Remediation Guides | **Verified** | Practical mitigation and patch instructions for CVE-2021-44228 (Log4Shell) and sudo GTFOBins misconfigurations. |
 | **REQ-31** | End-to-End Automated Journey Test | **Verified** | `src/tests/phase4EcorpMachine.test.ts` validates the complete attack flow, prerequisite enforcement, and machine reset (11 tests). |
+| **REQ-32** | IronBank Financial API Simulation | **Verified** | Debian 11 target (`10.10.11.82`) with MySQL service, parameterized SQLi detection on `/api/login`, JWT alg-none bypass on `/api/vault`, and root cron privesc. |
+| **REQ-33** | Corp-DC01 Active Directory Simulation | **Verified** | Windows Server 2019 Domain Controller (`10.10.11.99`) with Kerberos (88), LDAP (389), SMB (445), and MS17-010 EternalBlue vulnerability analysis. |
+| **REQ-34** | Synthetic Kerberoasting & Hash Cracking | **Verified** | `GetUserSPNs.py` extracts service ticket for `MSSQLSvc` SPN, and `john` / `hashcat` cracks hash with `rockyou.txt` recovering User Flag. |
+| **REQ-35** | Domain Admin DCSync & Pass-The-Hash | **Verified** | `secretsdump.py` extracts Domain Admin NTLM hash via `SeBackupPrivilege`, and `psexec.py` drops into SYSTEM cmd prompt on `corp-dc01` for Root Flag. |
+| **REQ-36** | Multi-Target Automated Verification | **Verified** | `src/tests/phase5IronBankAndCorpDc01.test.ts` exercises all 15 scenarios covering recon, auth bypass, privesc, isolation, and reset (106 tests total). |
