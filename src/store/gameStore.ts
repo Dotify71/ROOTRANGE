@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { TargetMachine, FlagSubmissionResult, RANKS, NetworkNode } from '../types';
+import { SimulationEngine } from '../simulation/simulationEngine';
+import { EvidenceItem, SerializedSimulationState, SimulationEvent } from '../simulation/types';
 
 interface GameState {
   score: number;
@@ -8,11 +10,17 @@ interface GameState {
   machines: TargetMachine[];
   networkNodes: NetworkNode[];
   claimedFlags: string[];
+  events: SimulationEvent[];
+  evidence: EvidenceItem[];
 
   // Actions
   setActiveMachine: (id: string) => void;
   submitFlag: (flag: string) => FlagSubmissionResult;
   updateCompromiseLevel: (machineId: string, level: 'RECON' | 'USER' | 'ROOT') => void;
+  resetMachine: (machineId: string) => void;
+  resetGame: () => void;
+  exportState: () => SerializedSimulationState;
+  importState: (state: SerializedSimulationState) => boolean;
 }
 
 export const INITIAL_MACHINES: TargetMachine[] = [
@@ -88,102 +96,205 @@ export const INITIAL_NETWORK_NODES: NetworkNode[] = [
   { id: 'corp-dc01', label: 'OmniCorp DC01 (10.10.11.99)', ip: '10.10.11.99', subnet: 'Core AD Forest', type: 'dc', status: 'locked', parentId: 'iron-vault' },
 ];
 
-export const useGameStore = create<GameState>((set, get) => ({
-  score: 0,
-  rank: 'Script Kiddie',
-  activeMachineId: 'ecorp-hr',
-  machines: INITIAL_MACHINES,
-  networkNodes: INITIAL_NETWORK_NODES,
-  claimedFlags: [],
+export const useGameStore = create<GameState>((set, get) => {
+  const engine = SimulationEngine.getInstance();
 
-  setActiveMachine: (id: string) => set({ activeMachineId: id }),
-
-  updateCompromiseLevel: (machineId: string, level: 'RECON' | 'USER' | 'ROOT') => {
+  // Sync simulation events to game store
+  engine.subscribe((event) => {
     set((state) => {
-      const updatedMachines = state.machines.map((m) => {
-        if (m.id === machineId) {
-          return { ...m, compromiseLevel: level };
-        }
-        return m;
-      });
+      const updatedEvents = [...state.events, event];
+      const updatedEvidence = engine.getEvidence();
 
-      const updatedNodes = state.networkNodes.map((n) => {
-        if (n.id === machineId) {
-          const status = level === 'ROOT' ? 'root' : level === 'USER' ? 'user' : 'discovered';
-          return { ...n, status: status as NetworkNode['status'] };
-        }
-        return n;
-      });
+      // If event updated machine compromise
+      let updatedMachines = state.machines;
+      let updatedNodes = state.networkNodes;
 
-      return { machines: updatedMachines, networkNodes: updatedNodes };
+      if (event.type === 'INITIAL_ACCESS_GRANTED' || event.type === 'SESSION_ESTABLISHED') {
+        updatedMachines = state.machines.map((m) =>
+          m.id === event.machineId && m.compromiseLevel === 'NONE' ? { ...m, compromiseLevel: 'USER' } : m
+        );
+        updatedNodes = state.networkNodes.map((n) =>
+          n.id === event.machineId && n.status !== 'root' ? { ...n, status: 'user' } : n
+        );
+      } else if (event.type === 'PRIVILEGE_ESCALATED' || event.type === 'MACHINE_COMPROMISED') {
+        updatedMachines = state.machines.map((m) =>
+          m.id === event.machineId ? { ...m, compromiseLevel: 'ROOT' } : m
+        );
+        updatedNodes = state.networkNodes.map((n) =>
+          n.id === event.machineId ? { ...n, status: 'root' } : n
+        );
+      }
+
+      return {
+        events: updatedEvents,
+        evidence: updatedEvidence,
+        machines: updatedMachines,
+        networkNodes: updatedNodes,
+      };
     });
-  },
+  });
 
-  submitFlag: (rawFlag: string): FlagSubmissionResult => {
-    const trimmed = rawFlag.trim();
-    const { claimedFlags, machines, score } = get();
+  return {
+    score: 0,
+    rank: 'Script Kiddie',
+    activeMachineId: 'ecorp-hr',
+    machines: INITIAL_MACHINES,
+    networkNodes: INITIAL_NETWORK_NODES,
+    claimedFlags: [],
+    events: [],
+    evidence: [],
 
-    if (claimedFlags.includes(trimmed)) {
-      return { success: false, message: 'Flag has already been submitted!', pointsAwarded: 0 };
-    }
+    setActiveMachine: (id: string) => set({ activeMachineId: id }),
 
-    for (const machine of machines) {
-      if (machine.userFlag === trimmed && !machine.userClaimed) {
-        const points = machine.points.user;
-        const newScore = score + points;
-        const newRank = calculateRank(newScore);
+    updateCompromiseLevel: (machineId: string, level: 'RECON' | 'USER' | 'ROOT') => {
+      engine.setMachineCompromiseLevel(machineId, level);
 
-        set({
-          score: newScore,
-          rank: newRank,
-          claimedFlags: [...claimedFlags, trimmed],
-          machines: machines.map((m) =>
-            m.id === machine.id ? { ...m, userClaimed: true, compromiseLevel: m.compromiseLevel === 'ROOT' ? 'ROOT' : 'USER' } : m
-          ),
-          networkNodes: get().networkNodes.map((n) =>
-            n.id === machine.id ? { ...n, status: 'user' } : n
-          ),
+      set((state) => {
+        const updatedMachines = state.machines.map((m) => {
+          if (m.id === machineId) {
+            return { ...m, compromiseLevel: level };
+          }
+          return m;
         });
 
-        return {
-          success: true,
-          message: `User Flag Captured on ${machine.name}! +${points} PTS`,
-          pointsAwarded: points,
-          flagType: 'user',
-          machineName: machine.name,
-        };
-      }
-
-      if (machine.rootFlag === trimmed && !machine.rootClaimed) {
-        const points = machine.points.root;
-        const newScore = score + points;
-        const newRank = calculateRank(newScore);
-
-        set({
-          score: newScore,
-          rank: newRank,
-          claimedFlags: [...claimedFlags, trimmed],
-          machines: machines.map((m) =>
-            m.id === machine.id ? { ...m, rootClaimed: true, compromiseLevel: 'ROOT' } : m
-          ),
-          networkNodes: get().networkNodes.map((n) =>
-            n.id === machine.id ? { ...n, status: 'root' } : n
-          ),
+        const updatedNodes = state.networkNodes.map((n) => {
+          if (n.id === machineId) {
+            const status = level === 'ROOT' ? 'root' : level === 'USER' ? 'user' : 'discovered';
+            return { ...n, status: status as NetworkNode['status'] };
+          }
+          return n;
         });
 
-        return {
-          success: true,
-          message: `SYSTEM ROOTED! Root Flag Captured on ${machine.name}! +${points} PTS`,
-          pointsAwarded: points,
-          flagType: 'root',
-          machineName: machine.name,
-        };
-      }
-    }
+        return { machines: updatedMachines, networkNodes: updatedNodes };
+      });
+    },
 
-    return { success: false, message: 'Invalid flag. Try again.', pointsAwarded: 0 };
-  },
-}));
+    submitFlag: (rawFlag: string): FlagSubmissionResult => {
+      const trimmed = rawFlag.trim();
+      const { claimedFlags, machines, score } = get();
+
+      if (claimedFlags.includes(trimmed)) {
+        return { success: false, message: 'Flag has already been submitted!', pointsAwarded: 0 };
+      }
+
+      for (const machine of machines) {
+        if (machine.userFlag === trimmed && !machine.userClaimed) {
+          const points = machine.points.user;
+          const newScore = score + points;
+          const newRank = calculateRank(newScore);
+
+          engine.emitEvent(
+            'FLAG_CAPTURED',
+            machine.id,
+            { flag: trimmed, type: 'user', points },
+            `User Flag captured on ${machine.name}! (+${points} PTS)`,
+            0
+          );
+
+          set({
+            score: newScore,
+            rank: newRank,
+            claimedFlags: [...claimedFlags, trimmed],
+            machines: machines.map((m) =>
+              m.id === machine.id ? { ...m, userClaimed: true, compromiseLevel: m.compromiseLevel === 'ROOT' ? 'ROOT' : 'USER' } : m
+            ),
+            networkNodes: get().networkNodes.map((n) =>
+              n.id === machine.id ? { ...n, status: 'user' } : n
+            ),
+          });
+
+          return {
+            success: true,
+            message: `User Flag Captured on ${machine.name}! +${points} PTS`,
+            pointsAwarded: points,
+            flagType: 'user',
+            machineName: machine.name,
+          };
+        }
+
+        if (machine.rootFlag === trimmed && !machine.rootClaimed) {
+          const points = machine.points.root;
+          const newScore = score + points;
+          const newRank = calculateRank(newScore);
+
+          engine.emitEvent(
+            'FLAG_CAPTURED',
+            machine.id,
+            { flag: trimmed, type: 'root', points },
+            `SYSTEM ROOTED! Root Flag captured on ${machine.name}! (+${points} PTS)`,
+            0
+          );
+
+          set({
+            score: newScore,
+            rank: newRank,
+            claimedFlags: [...claimedFlags, trimmed],
+            machines: machines.map((m) =>
+              m.id === machine.id ? { ...m, rootClaimed: true, compromiseLevel: 'ROOT' } : m
+            ),
+            networkNodes: get().networkNodes.map((n) =>
+              n.id === machine.id ? { ...n, status: 'root' } : n
+            ),
+          });
+
+          return {
+            success: true,
+            message: `SYSTEM ROOTED! Root Flag Captured on ${machine.name}! +${points} PTS`,
+            pointsAwarded: points,
+            flagType: 'root',
+            machineName: machine.name,
+          };
+        }
+      }
+
+      return { success: false, message: 'Invalid flag. Try again.', pointsAwarded: 0 };
+    },
+
+    resetMachine: (machineId: string) => {
+      engine.resetMachine(machineId);
+      const original = INITIAL_MACHINES.find((m) => m.id === machineId);
+      if (!original) return;
+
+      set((state) => ({
+        machines: state.machines.map((m) => (m.id === machineId ? { ...original } : m)),
+        networkNodes: state.networkNodes.map((n) =>
+          n.id === machineId ? { ...n, status: 'discovered' } : n
+        ),
+      }));
+    },
+
+    resetGame: () => {
+      engine.resetRange();
+      set({
+        score: 0,
+        rank: 'Script Kiddie',
+        activeMachineId: 'ecorp-hr',
+        machines: INITIAL_MACHINES,
+        networkNodes: INITIAL_NETWORK_NODES,
+        claimedFlags: [],
+        events: [],
+        evidence: [],
+      });
+    },
+
+    exportState: () => {
+      return engine.exportState();
+    },
+
+    importState: (serializedState: SerializedSimulationState) => {
+      const ok = engine.importState(serializedState);
+      if (ok) {
+        set({
+          score: serializedState.score,
+          rank: calculateRank(serializedState.score),
+          events: serializedState.events,
+          evidence: serializedState.evidence,
+        });
+      }
+      return ok;
+    },
+  };
+});
 
 function calculateRank(score: number): string {
   let userRank = RANKS[0].title;

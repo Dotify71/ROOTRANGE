@@ -1,5 +1,7 @@
 import { VirtualFileSystem, FsNode } from './virtualFs';
 import { TargetMachine } from '../types';
+import { SimulatedCommandAdapters } from '../simulation/adapters/commandAdapters';
+import { SimulationEngine } from '../simulation/simulationEngine';
 
 export interface ExecutionContext {
   user: string;
@@ -68,6 +70,7 @@ SYSTEM UTILITIES:
   stat <path>              Display file or file system status
   mkdir <dir>              Create directory
   touch <file>             Update file timestamp or create empty file
+  ps [aux]                 Report a snapshot of the current processes
   env                      Display all active environment variables
   whoami                   Print effective userid
   id                       Print real and effective user and group IDs
@@ -79,9 +82,12 @@ OFFENSIVE SECURITY TOOLS:
   nmap [flags] <target>    Network exploration tool and port scanner
   gobuster dir -u <url>    Directory/file enumeration tool
   hydra -l <usr> -P <wl>   Fast network logon cracker
-  curl [flags] <url>       Transfer a URL
-  nc -lvnp <port>          Arbitrary TCP and UDP connections and listens
+  sqlmap -u <url>          Automatic SQL injection & database takeover tool
+  curl [flags] <url>       Transfer a URL / API payload delivery
+  ssh [user@]host          OpenSSH remote login client
+  nc -lvnp <port>          Arbitrary TCP/UDP listener and reverse shell catcher
   sudo [-l] [command]      Execute a command as another user / root
+  linpeas.sh               Linux Privilege Escalation Awesome Script
 
 PIPELINE & REDIRECTION:
   command1 | command2      Pipe stdout of command1 to stdin of command2
@@ -474,194 +480,73 @@ Change: ${node.mtime.toISOString()}`,
     });
 
     // 17. SUDO
-    this.register('sudo', (args, ctx) => {
-      const fullArgs = args.join(' ');
-
-      if (fullArgs.includes('-l')) {
-        return {
-          stdout: `Matching Defaults entries for ${ctx.user} on ${ctx.hostname}:
-    env_reset, mail_badpass, secure_path=/usr/local/sbin\\:/usr/local/bin\\:/usr/sbin\\:/usr/bin
-
-User ${ctx.user} may run the following commands on ${ctx.hostname}:
-    (ALL : ALL) NOPASSWD: /usr/bin/find`,
-          stderr: '',
-          exitCode: 0,
-        };
-      }
-
-      // GTFOBins Privilege Escalation via find
-      if (fullArgs.includes('/usr/bin/find') && fullArgs.includes('/bin/sh')) {
-        return {
-          stdout: `[+] Sudo privilege escalation successful!\n# Spawning interactive root shell (euid=0)...`,
-          stderr: '',
-          exitCode: 0,
-          enterShell: { user: 'root', uid: 0, group: 'root', gid: 0, host: ctx.hostname, cwd: '/root' },
-          soundTrigger: 'connect',
-          targetCompromised: 'ROOT',
-        };
-      }
-
-      return {
-        stdout: '',
-        stderr: `[sudo] password for ${ctx.user}: \nsudo: a password is required`,
-        exitCode: 1,
-      };
-    });
+    this.register('sudo', (args, ctx) => SimulatedCommandAdapters.sudo(args, ctx));
 
     // 18. NMAP
-    this.register('nmap', (args, ctx) => {
-      const targetIp = args.find((a) => a.includes('10.10.') || a === '127.0.0.1' || a.includes('.htb'));
+    this.register('nmap', (args, ctx) => SimulatedCommandAdapters.nmap(args, ctx));
 
-      if (!targetIp) {
-        return { stdout: '', stderr: 'Failed to resolve IP or target. Usage: nmap -sV -sC <ip>', exitCode: 1 };
-      }
+    // 19. GOBUSTER
+    this.register('gobuster', (args) => SimulatedCommandAdapters.gobuster(args));
 
-      const machine = ctx.activeTarget;
-      if (!machine || (machine.ip !== targetIp && !targetIp.includes(machine.id))) {
-        return {
-          stdout: `Starting Nmap 7.94 ( https://nmap.org ) at 2026-10-29 07:08 UTC
-Note: Host seems down. If it is really up, but blocking our ping probes, try -Pn
-Nmap done: 1 IP address (0 hosts up) scanned in 2.14 seconds`,
-          stderr: '',
-          exitCode: 0,
-        };
-      }
+    // 20. NETCAT (NC)
+    this.register('nc', (args) => SimulatedCommandAdapters.nc(args));
 
-      const portRows = machine.ports
-        .map((p) => `${(p.port.toString() + '/tcp').padEnd(10)} ${p.state.padEnd(8)} ${p.service.padEnd(16)} ${p.version}`)
-        .join('\n');
+    // 21. CURL
+    this.register('curl', (args) => SimulatedCommandAdapters.curl(args));
+
+    // 22. SSH
+    this.register('ssh', (args, ctx) => SimulatedCommandAdapters.ssh(args, ctx));
+
+    // 23. HYDRA
+    this.register('hydra', (args) => SimulatedCommandAdapters.hydra(args));
+
+    // 24. SQLMAP
+    this.register('sqlmap', (args) => SimulatedCommandAdapters.sqlmap(args));
+
+    // 25. LINPEAS
+    const linpeasHandler: CommandHandler = (_args, ctx) => SimulatedCommandAdapters.linpeas(ctx);
+    this.register('linpeas', linpeasHandler);
+    this.register('linpeas.sh', linpeasHandler);
+    this.register('./linpeas.sh', linpeasHandler);
+
+    // 26. PS (VIRTUAL PROCESS TABLE)
+    this.register('ps', (_args, ctx) => {
+      const machine = SimulationEngine.getInstance().getMachine(ctx.hostname) ||
+        (ctx.activeTarget ? SimulationEngine.getInstance().getMachine(ctx.activeTarget.id) : undefined);
+
+      const processes = machine ? machine.processes : [
+        { pid: 1, ppid: 0, user: 'root', cpu: 0.0, mem: 0.1, stat: 'Ss', command: '/sbin/init' },
+        { pid: 320, ppid: 1, user: 'root', cpu: 0.0, mem: 0.2, stat: 'Ss', command: '/usr/sbin/sshd' },
+        { pid: 450, ppid: 1, user: 'kali', cpu: 0.1, mem: 0.8, stat: 'Ss', command: '-bash' },
+        { pid: 1024, ppid: 450, user: 'kali', cpu: 0.0, mem: 0.1, stat: 'R+', command: 'ps aux' },
+      ];
+
+      const header = 'USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND';
+      const rows = processes.map((p) => {
+        return `${p.user.padEnd(8)} ${p.pid.toString().padStart(5)}  ${p.cpu.toFixed(1)}  ${p.mem.toFixed(1)}  104856  12480 ?        ${p.stat.padEnd(4)} 07:00   0:00 ${p.command}`;
+      });
 
       return {
-        stdout: `Starting Nmap 7.94 ( https://nmap.org ) at 2026-10-29 07:08 UTC
-Nmap scan report for ${machine.name} (${machine.ip})
-Host is up (0.024s latency).
-Not shown: 997 closed tcp ports (reset)
-
-PORT       STATE    SERVICE          VERSION
-${portRows}
-
-Service Info: OS: ${machine.os}; CPE: cpe:/o:linux:linux_kernel
-
-Nmap done: 1 IP address (1 host up) scanned in 3.42 seconds`,
+        stdout: `${header}\n${rows.join('\n')}`,
         stderr: '',
         exitCode: 0,
-        soundTrigger: 'scan',
-        targetCompromised: 'RECON',
       };
     });
 
-    // 19. GOBUSTER
-    this.register('gobuster', (args) => {
-      const urlArg = args.find((_, i) => args[i - 1] === '-u') || '';
-
-      if (!urlArg) {
-        return { stdout: '', stderr: 'Error: required flag `-u` missing. Usage: gobuster dir -u http://10.10.11.45 -w common.txt', exitCode: 1 };
-      }
-
-      if (urlArg.includes('10.10.11.45') || urlArg.includes('ecorp-hr')) {
+    // 27. RESET
+    this.register('reset', (_args, ctx) => {
+      if (ctx.activeTarget) {
+        SimulationEngine.getInstance().resetMachine(ctx.activeTarget.id);
         return {
-          stdout: `===============================================================
-Gobuster v3.6
-by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
-===============================================================
-[+] Url:                     ${urlArg}
-[+] Method:                  GET
-[+] Wordlist:                common.txt
-===============================================================
-Starting gobuster directory enumeration mode
-===============================================================
-/admin                (Status: 403) [Size: 284]
-/api                  (Status: 200) [Size: 1042]
-/login                (Status: 200) [Size: 4210]
-/portal               (Status: 200) [Size: 1820]
-/uploads              (Status: 301) [Size: 312]
-===============================================================
-Finished
-===============================================================`,
+          stdout: `[+] Machine '${ctx.activeTarget.name}' has been reset to pristine initial state.`,
           stderr: '',
           exitCode: 0,
-          soundTrigger: 'scan',
         };
       }
-
-      return { stdout: '', stderr: 'Error: unable to connect to host.', exitCode: 1 };
+      return { stdout: '', stderr: 'No active target to reset.', exitCode: 1 };
     });
 
-    // 20. NETCAT (NC)
-    this.register('nc', (args) => {
-      const raw = args.join(' ');
-      if (raw.includes('-l') && (raw.includes('4444') || raw.includes('9001'))) {
-        return {
-          stdout: `listening on [any] 4444 ...
-connect to [10.10.14.22] from (UNKNOWN) [10.10.11.45] 48290
-Linux ecorp-hr 5.15.0-89-generic #99-Ubuntu SMP x86_64
-uid=33(www-data) gid=33(www-data) groups=33(www-data)
-$ whoami
-www-data
-$ `,
-          stderr: '',
-          exitCode: 0,
-          enterShell: { user: 'www-data', uid: 33, group: 'www-data', gid: 33, host: 'ecorp-hr', cwd: '/home/alex' },
-          soundTrigger: 'connect',
-          targetCompromised: 'USER',
-        };
-      }
-      return { stdout: '', stderr: 'usage: nc -lvnp <port>', exitCode: 1 };
-    });
-
-    // 21. CURL
-    this.register('curl', (args) => {
-      const raw = args.join(' ');
-      if (raw.includes('jndi:ldap') || raw.includes('jndi:rmi')) {
-        return {
-          stdout: `HTTP/1.1 200 OK
-Server: Apache/2.4.49 (Unix)
-Content-Type: text/html;charset=UTF-8
-
-[+] JNDI Lookup Triggered! Connecting back to LDAP referral server...
-[+] Remote bytecode loaded into JVM volatile memory!
-[+] Spawning reverse shell socket to 10.10.14.22:4444...`,
-          stderr: '',
-          exitCode: 0,
-          soundTrigger: 'connect',
-        };
-      }
-
-      const url = args.find((a) => a.startsWith('http://') || a.startsWith('https://'));
-      if (url && (url.includes('10.10.11.45') || url.includes('ecorp-hr'))) {
-        return {
-          stdout: `<!DOCTYPE html>
-<html><head><title>E-Corp Employee Portal</title></head>
-<body><h1>E-Corp Internal HR v2.4.1</h1>
-<p>Auditing via Log4j Enterprise Subsystem.</p>
-</body></html>`,
-          stderr: '',
-          exitCode: 0,
-        };
-      }
-
-      return { stdout: '', stderr: `curl: (7) Failed to connect to host: Connection refused`, exitCode: 7 };
-    });
-
-    // 22. HYDRA
-    this.register('hydra', (args) => {
-      const raw = args.join(' ');
-      if (raw.includes('admin') && raw.includes('10.10.11.')) {
-        return {
-          stdout: `Hydra v9.5 (c) 2023 by van Hauser / THC & David Maciejak
-[DATA] attacking ssh://10.10.11.45:22/
-[STATUS] 10.00 tries/min, 10 tries in 00:01h, 8 to_do...
-[22][ssh] host: 10.10.11.45   login: admin   password: password123
-1 of 1 target completed, 1 valid password found`,
-          stderr: '',
-          exitCode: 0,
-          soundTrigger: 'scan',
-        };
-      }
-      return { stdout: '', stderr: 'Hydra: missing parameters. Usage: hydra -l admin -P rockyou.txt ssh://<ip>', exitCode: 1 };
-    });
-
-    // 23. EXIT
+    // 28. EXIT
     this.register('exit', (_args, ctx) => {
       if (ctx.inReverseShell) {
         return {

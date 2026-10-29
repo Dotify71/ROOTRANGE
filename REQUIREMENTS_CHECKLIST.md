@@ -22,3 +22,9 @@
 | **REQ-18** | Pipelines & Redirection | **Verified** | Multi-stage pipeline execution (`cat | grep | head`) and file redirection (`>`, `>>`) in `CommandInterpreter`. |
 | **REQ-19** | Tab Completion & Navigation | **Verified** | Tab completion for commands and virtual paths, and history navigation via Arrow keys in `PwnboxTerminal.tsx`. |
 | **REQ-20** | Machine Fixtures & Clues | **Verified** | Configured files for E-Corp HR machine (`/etc/passwd`, `/etc/shadow`, `/var/www/html/config.php`, `/home/alex/user.txt`, `/root/root.txt`). |
+| **REQ-21** | Deterministic Simulation Engine | **Verified** | `SimulationEngine` in `src/simulation/simulationEngine.ts` manages machine states, network topology, routing, and challenge progression. |
+| **REQ-22** | Typed Simulation Event Model | **Verified** | 11 distinct event types (`SERVICE_DISCOVERED`, `SESSION_ESTABLISHED`, `CHALLENGE_COMPLETED`, etc.) with reactive subscription hooks. |
+| **REQ-23** | Network Subnet Pivoting | **Verified** | Enforces isolation of internal and Active Directory subnets until perimeter pivot machines are compromised. |
+| **REQ-24** | Deterministic Command Adapters | **Verified** | `SimulatedCommandAdapters` implements context-sensitive handlers for `nmap`, `gobuster`, `curl`, `ssh`, `sudo`, `hydra`, `sqlmap`, `nc`, and `linpeas.sh`. |
+| **REQ-25** | Objective & Prerequisite System | **Verified** | Challenge graph prevents skipping reconnaissance, initial foothold, and local enumeration prerequisites. |
+| **REQ-26** | Reset & Save-State Serialization | **Verified** | Independent machine reset, full range reset, and versioned JSON state serialization/restoration (`exportState`, `importState`). |

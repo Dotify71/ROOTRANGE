@@ -34,13 +34,49 @@ ROOTRANGE/
 │   ├── components/      # UI components (PwnboxTerminal, AttackGraph, HttpRepeater, etc.)
 │   │   └── layout/      # AppShell, Sidebar, TopStatusBar
 │   ├── pages/           # 10 Functional Route Pages
-│   ├── services/        # VirtualFileSystem and CommandInterpreter
+│   ├── services/        # VirtualFileSystem, ShellParser, CommandRegistry, and CommandInterpreter
+│   ├── simulation/      # Deterministic Cyber Range Simulation Engine
+│   │   ├── adapters/    # Deterministic Command Adapters (nmap, gobuster, curl, etc.)
+│   │   ├── machineDefinitions.ts # Typed machine configs and network subnets
+│   │   ├── simulationEngine.ts   # Core engine, event bus, sessions, and state serialization
+│   │   └── types.ts              # Typed domain models, events, and objectives
 │   ├── store/           # Zustand state store
 │   ├── tests/           # Vitest unit and integration test suites
 │   ├── types/           # TypeScript domain definitions
 │   ├── App.tsx          # Root router configuration
 │   ├── main.tsx         # Application entrypoint
 │   └── index.css        # Tailwind styling & cyber scrollbars
+
+## Simulation Engine Architecture (Phase 3)
+
+The simulation engine is designed as a deterministic, event-driven virtual penetration testing sandbox:
+
+```
+┌────────────────────────────────────────────────────────┐
+│                   SIMULATION ENGINE                    │
+├────────────────────────────────────────────────────────┤
+│ Subnet & Network Routing (Pivoting & Gateway Enforcer) │
+│ • DMZ (10.10.11.0/24) -> Directly accessible           │
+│ • Internal Banking (10.10.12.0/24) -> Requires Pivot   │
+│ • AD Forest (10.10.13.0/24) -> Requires Domain Pivot   │
+├────────────────────────────────────────────────────────┤
+│ Typed Event Bus (11 Event Types)                       │
+│ • SERVICE_DISCOVERED, DIRECTORY_DISCOVERED             │
+│ • VULNERABILITY_IDENTIFIED, CREDENTIAL_DISCOVERED      │
+│ • INITIAL_ACCESS_GRANTED, SESSION_ESTABLISHED          │
+│ • PRIVILEGE_ESCALATED, MACHINE_COMPROMISED             │
+│ • CHALLENGE_COMPLETED, FLAG_CAPTURED                   │
+├────────────────────────────────────────────────────────┤
+│ Challenge Progression & Evidence Vault                 │
+│ • Prerequisite objective graph validation              │
+│ • Deduplicated loot & credential discovery             │
+│ • Active interactive sessions (SSH, reverse shells)   │
+├────────────────────────────────────────────────────────┤
+│ Deterministic Command Adapters                         │
+│ • nmap, gobuster, curl, ssh, sudo, hydra, sqlmap, nc   │
+│ • linpeas.sh, ps aux                                   │
+└────────────────────────────────────────────────────────┘
+```
 ├── .env.example         # Environment template
 ├── ARCHITECTURE.md      # System architecture specification
 ├── PROJECT_PLAN.md      # Development roadmap

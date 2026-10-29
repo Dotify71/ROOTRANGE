@@ -20,10 +20,15 @@ ROOTRANGE is an open-source, in-browser Cyber Range and Gamified Penetration Tes
 - Realistic Kali Linux terminal interface (`PwnboxTerminal.tsx`) with dynamic prompt, command history, tab completion, and audio feedback.
 - Machine fixtures and simulated permission boundaries (`/etc/shadow`, `/root/root.txt`, `/root/scripts/backup.sh`).
 
-### Phase 3: Simulated Machines Range & CVE Scenarios
-- Box 1: E-Corp HR (Log4j CVE-2021-44228 $\to$ Sudo Find Root Privesc).
-- Box 2: IronBank Vault (SQLi Auth Bypass $\to$ JWT Signature Forgery $\to$ Cron Root).
-- Box 3: OmniCorp DC01 (Windows Active Directory $\to$ Kerberoasting $\to$ Domain Admin).
+### Phase 3: Deterministic Cyber Range Simulation Engine (Complete)
+- Deterministic simulation core (`SimulationEngine`) managing machines, subnets, routing, and challenge progression.
+- Machine domain models with full configurations for E-Corp HR, IronBank API, OmniCorp DC01, and Perimeter Gateway.
+- Virtual network interfaces, subnets, and pivoting requirements across isolated networks.
+- Service discovery and web route registries with dynamic Log4Shell JNDI and SQLi handlers.
+- Virtual process tables (`VirtualProcess`) and sessions (`ActiveSession`).
+- Typed event system with 11 event types (`SERVICE_DISCOVERED`, `SESSION_ESTABLISHED`, `CHALLENGE_COMPLETED`, etc.).
+- Deterministic command adapters for `nmap`, `gobuster`, `curl`, `ssh`, `sudo`, `hydra`, `sqlmap`, `nc`, and `linpeas.sh`.
+- Machine and range reset workflows and versioned JSON state serialization.
 
 ### Phase 4: BloodHound Attack Graph & Subnet Pivoting
 - 2D interactive network topology visualizer.
