@@ -334,51 +334,132 @@ export class SimulationEngine {
 
   public handleHttpRequest(
     targetIp: string,
-    req: { method: string; path: string; headers: Record<string, string>; body?: string }
-  ): { statusCode: number; contentType: string; body: string; headers: Record<string, string> } {
-    const reachableCheck = this.canReachIp(targetIp);
+    req: {
+      method: string;
+      path: string;
+      headers: Record<string, string>;
+      body?: string;
+      queryParams?: Record<string, string>;
+    }
+  ): {
+    statusCode: number;
+    contentType: string;
+    body: string;
+    headers: Record<string, string>;
+    durationMs: number;
+  } {
+    // 1. Security boundary enforcement: Only allowed virtual simulated subnets or registered virtual hostnames
+    const cleanHost = targetIp.split(':')[0].toLowerCase();
+    const isVirtualTarget =
+      cleanHost.startsWith('10.10.') ||
+      ['ecorp-hr', 'iron-vault', 'corp-dc01', 'edge-gw-01', 'gw', 'pivot-router', 'corp.local'].includes(cleanHost);
+
+    if (
+      !isVirtualTarget ||
+      cleanHost === '127.0.0.1' ||
+      cleanHost === 'localhost' ||
+      cleanHost.startsWith('192.168.') ||
+      cleanHost.startsWith('169.254.')
+    ) {
+      return {
+        statusCode: 403,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          {
+            error: 'Security Boundary Violation',
+            message: `External destinations and loopback networks (${targetIp}) are blocked. ROOTRANGE operates strictly on isolated virtual range subnets (10.10.0.0/16).`,
+            policy: 'SIMULATED_RANGE_ISOLATION_ENFORCED',
+          },
+          null,
+          2
+        ),
+        headers: {
+          'X-Security-Policy': 'ROOTRANGE-Virtual-Isolation-Active',
+          Server: 'ROOTRANGE-Virtual-Firewall',
+        },
+        durationMs: 8,
+      };
+    }
+
+    // 2. Separate clean path and query parameters
+    let cleanPath = req.path;
+    const queryParams: Record<string, string> = { ...(req.queryParams || {}) };
+    if (cleanPath.includes('?')) {
+      const [p, qs] = cleanPath.split('?');
+      cleanPath = p;
+      const searchParams = new URLSearchParams(qs);
+      searchParams.forEach((val, key) => {
+        queryParams[key] = val;
+      });
+    }
+    if (!cleanPath.startsWith('/')) {
+      cleanPath = '/' + cleanPath;
+    }
+
+    // 3. Network reachability check
+    const reachableCheck = this.canReachIp(cleanHost);
     if (!reachableCheck.reachable) {
       return {
         statusCode: 504,
         contentType: 'text/plain',
         body: `504 Gateway Timeout: ${reachableCheck.reason}`,
-        headers: {},
+        headers: { Server: 'ROOTRANGE-Virtual-Gateway' },
+        durationMs: 45,
       };
     }
 
-    const machine = this.getMachine(targetIp);
+    const machine = this.getMachine(cleanHost);
     if (!machine || !machine.webRoutes) {
       return {
         statusCode: 502,
         contentType: 'text/plain',
         body: '502 Bad Gateway: Connection refused to port 80/tcp',
-        headers: {},
+        headers: { Server: 'ROOTRANGE-Virtual-Gateway' },
+        durationMs: 15,
       };
     }
 
-    // Record route as discovered
-    this.discoverRoute(machine.id, req.path);
+    // 4. Port discovery: discover HTTP port (80 or 8080 or 3000)
+    const httpPort = machine.ports.find((p) => p.service === 'http' || p.service === 'http-proxy' || p.port === 80 || p.port === 8080 || p.port === 3000);
+    if (httpPort) {
+      this.discoverPort(machine.id, httpPort.port);
+    }
 
-    // Match route
+    // 5. Record route as discovered
+    this.discoverRoute(machine.id, cleanPath);
+
+    // 6. Match route
+    const upperMethod = (req.method || 'GET').toUpperCase() as WebRoute['methods'][number];
     const route = machine.webRoutes.find(
-      (r) => r.path === req.path && r.methods.includes(req.method.toUpperCase() as WebRoute['methods'][number])
+      (r) => r.path === cleanPath && r.methods.includes(upperMethod)
     );
+
+    const defaultServerHeader = machine.os === 'ActiveDirectory'
+      ? 'Microsoft-IIS/10.0'
+      : machine.id === 'iron-vault'
+      ? 'Express / Node.js'
+      : 'Apache/2.4.49 (Unix) OpenSSL/1.1.1l';
+
+    // Simulated duration: deterministic based on path + body length
+    const durationMs = 20 + ((cleanPath.length * 3 + (req.body?.length || 0)) % 45);
 
     if (!route) {
       return {
         statusCode: 404,
-        contentType: 'text/html',
-        body: `<!DOCTYPE html><html><body><h1>404 Not Found</h1><p>The requested URL ${req.path} was not found on this server.</p></body></html>`,
-        headers: { Server: 'Apache/2.4.49' },
+        contentType: 'text/html; charset=UTF-8',
+        body: `<!DOCTYPE html><html><head><title>404 Not Found</title></head><body><h1>404 Not Found</h1><p>The requested URL ${cleanPath} was not found on this server.</p><hr/><address>${defaultServerHeader}</address></body></html>`,
+        headers: { Server: defaultServerHeader, 'Content-Type': 'text/html; charset=UTF-8' },
+        durationMs,
       };
     }
 
     if (route.handler) {
       const result = route.handler({
-        method: req.method,
-        path: req.path,
+        method: upperMethod,
+        path: cleanPath,
         headers: req.headers,
         body: req.body,
+        queryParams,
       });
 
       if (result.triggerEvent) {
@@ -386,16 +467,35 @@ export class SimulationEngine {
           result.triggerEvent.type,
           machine.id,
           result.triggerEvent.payload,
-          `HTTP Trigger: ${result.triggerEvent.type} on ${req.path}`,
+          `HTTP Trigger: ${result.triggerEvent.type} on ${cleanPath}`,
           result.triggerEvent.xp
         );
+
+        if (result.triggerEvent.type === 'CREDENTIAL_DISCOVERED') {
+          const payload = result.triggerEvent.payload as any;
+          this.addEvidence({
+            machineId: machine.id,
+            type: 'CREDENTIAL',
+            name: payload?.name || 'Discovered Credential',
+            source: `HTTP ${upperMethod} ${cleanPath}`,
+            value: typeof payload === 'string' ? payload : JSON.stringify(payload),
+            description: payload?.note || `Credential discovered via HTTP request to ${cleanPath}`,
+          });
+        }
       }
 
       return {
         statusCode: result.statusCode,
         contentType: result.contentType,
         body: result.body,
-        headers: { ...(route.headers || {}), ...(result.headers || {}) },
+        headers: {
+          Server: defaultServerHeader,
+          Date: new Date().toUTCString(),
+          'Content-Type': result.contentType,
+          ...(route.headers || {}),
+          ...(result.headers || {}),
+        },
+        durationMs,
       };
     }
 
@@ -403,7 +503,13 @@ export class SimulationEngine {
       statusCode: route.statusCode,
       contentType: route.contentType,
       body: route.responseBody,
-      headers: route.headers || { Server: 'Apache/2.4.49' },
+      headers: {
+        Server: defaultServerHeader,
+        Date: new Date().toUTCString(),
+        'Content-Type': route.contentType,
+        ...(route.headers || {}),
+      },
+      durationMs,
     };
   }
 

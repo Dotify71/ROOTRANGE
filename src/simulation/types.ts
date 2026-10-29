@@ -63,7 +63,7 @@ export interface VirtualProcess {
 
 export interface WebRoute {
   path: string;
-  methods: ('GET' | 'POST' | 'PUT' | 'DELETE' | 'OPTIONS' | 'HEAD')[];
+  methods: ('GET' | 'POST' | 'PUT' | 'DELETE' | 'OPTIONS' | 'HEAD' | 'PATCH')[];
   statusCode: number;
   contentType: string;
   responseBody: string;

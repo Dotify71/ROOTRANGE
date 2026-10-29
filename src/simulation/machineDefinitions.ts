@@ -169,18 +169,62 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
         methods: ['GET', 'POST'],
         statusCode: 200,
         contentType: 'text/html; charset=UTF-8',
-        responseBody: `<!DOCTYPE html>
-<html>
-<head><title>E-Corp SSO Portal</title></head>
-<body>
-  <h2>E-Corp Corporate Authentication</h2>
-  <form method="POST" action="/login">
-    <input type="text" name="username" placeholder="Username" />
-    <input type="password" name="password" placeholder="Password" />
-    <button type="submit">Sign In</button>
-  </form>
-</body>
-</html>`,
+        responseBody: `<!DOCTYPE html><html><head><title>E-Corp SSO Portal</title></head><body><h2>E-Corp Corporate Authentication</h2><form method="POST" action="/login"><input type="text" name="username" placeholder="Username" /><input type="password" name="password" placeholder="Password" /><button type="submit">Sign In</button></form></body></html>`,
+        handler: (req) => {
+          if (req.method === 'GET') {
+            return {
+              statusCode: 200,
+              contentType: 'text/html; charset=UTF-8',
+              body: `<!DOCTYPE html><html><head><title>E-Corp SSO Portal</title></head><body style="font-family:sans-serif;background:#0d1117;color:#c9d1d9;padding:30px;"><h2>E-Corp Corporate Authentication</h2><p>Sign in to access internal employee payroll and portal services.</p><form method="POST" action="/login"><div style="margin-bottom:10px;"><label>Username: </label><input type="text" name="username" style="padding:6px;background:#161b22;border:1px solid #30363d;color:#fff;" /></div><div style="margin-bottom:10px;"><label>Password: </label><input type="password" name="password" style="padding:6px;background:#161b22;border:1px solid #30363d;color:#fff;" /></div><button type="submit" style="padding:8px 16px;background:#238636;color:#fff;border:none;cursor:pointer;">Sign In</button></form></body></html>`,
+            };
+          }
+
+          // POST handling
+          const raw = `${req.body || ''} ${JSON.stringify(req.headers)}`;
+          if (raw.includes('${jndi:') || raw.includes('jndi:ldap') || raw.includes('jndi:rmi')) {
+            return {
+              statusCode: 200,
+              contentType: 'application/json',
+              body: JSON.stringify({
+                status: 'exploit_triggered',
+                message: 'JNDI lookup executed against referral server ldap://10.10.14.22:1389/Exploit',
+                session: 'Spawning reverse shell to attacker listener 10.10.14.22:4444',
+                pwn_notice: '[+] Reverse TCP shell payload triggered on target container! Check your Pwnbox netcat listener on port 4444!',
+              }, null, 2),
+              triggerEvent: {
+                type: 'INITIAL_ACCESS_GRANTED',
+                payload: { method: 'Log4j JNDI Remote Code Execution', uid: 33, user: 'www-data' },
+                xp: 25,
+              },
+            };
+          }
+
+          const bodyStr = req.body || '';
+          if (
+            (bodyStr.includes('username=alex') || bodyStr.includes('"username":"alex"')) &&
+            (bodyStr.includes('alex123') || bodyStr.includes('alexpassword') || bodyStr.includes('password=alex'))
+          ) {
+            return {
+              statusCode: 200,
+              contentType: 'application/json',
+              body: JSON.stringify({
+                success: true,
+                message: 'Authentication successful. Session cookie issued for Alexander Morgan.',
+                session_id: 'ecorp_alex_sess_8921',
+                redirect: '/admin',
+              }, null, 2),
+              headers: {
+                'Set-Cookie': 'session_id=ecorp_alex_sess_8921; Path=/; HttpOnly; SameSite=Lax',
+              },
+            };
+          }
+
+          return {
+            statusCode: 401,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: 'Invalid employee credentials' }),
+          };
+        },
       },
       {
         path: '/api/audit',
@@ -189,7 +233,7 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
         contentType: 'application/json',
         responseBody: '{"status":"ok","message":"Audit log recorded via Log4j engine"}',
         handler: (req) => {
-          const raw = JSON.stringify(req);
+          const raw = `${req.body || ''} ${JSON.stringify(req.headers)}`;
           if (raw.includes('jndi:ldap') || raw.includes('jndi:rmi') || raw.includes('${jndi:')) {
             return {
               statusCode: 200,
@@ -198,7 +242,8 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
                 status: 'exploit_triggered',
                 message: 'JNDI lookup executed against referral server ldap://10.10.14.22:1389/Exploit',
                 session: 'Spawning reverse shell to attacker listener 10.10.14.22:4444',
-              }),
+                pwn_notice: '[+] Reverse TCP shell payload triggered on target container! Check your Pwnbox netcat listener on port 4444!',
+              }, null, 2),
               triggerEvent: {
                 type: 'INITIAL_ACCESS_GRANTED',
                 payload: { method: 'Log4j JNDI Remote Code Execution', uid: 33, user: 'www-data' },
@@ -215,10 +260,51 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
       },
       {
         path: '/admin',
-        methods: ['GET', 'POST'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
         statusCode: 403,
         contentType: 'text/html',
         responseBody: '<html><body><h1>403 Forbidden</h1><p>Access restricted to internal subnet 10.10.12.0/24.</p></body></html>',
+        handler: (req) => {
+          const cookieHeader = req.headers['cookie'] || req.headers['Cookie'] || '';
+          const hasAdminCookie =
+            cookieHeader.includes('session_id=admin_session_root_99') ||
+            cookieHeader.includes('session_id=ecorp_alex_sess_8921') ||
+            cookieHeader.includes('role=admin') ||
+            (req.headers['authorization'] || '').toLowerCase().includes('admin');
+
+          if (hasAdminCookie) {
+            const respHeaders: Record<string, string> = {
+              Server: 'Apache/2.4.49 (Unix)',
+              'X-Authenticated-As': 'admin',
+            };
+            return {
+              statusCode: 200,
+              contentType: 'application/json',
+              body: JSON.stringify({
+                status: 'authorized',
+                admin_user: 'Alexander Morgan',
+                role: 'Senior DevOps / Sudo Administrator',
+                notice: 'Sudo permission maintenance grant: Alexander has NOPASSWD access to /usr/bin/find on ecorp-hr container.',
+                payroll_audit_key: 'E-CORP-PAYROLL-SEC-4412',
+                system_uptime: '42 days, 14 hours',
+              }, null, 2),
+              headers: respHeaders,
+              triggerEvent: {
+                type: 'CREDENTIAL_DISCOVERED',
+                payload: { name: 'Admin Session Access', user: 'alex', note: 'Sudo maintenance access to find' },
+                xp: 15,
+              },
+            };
+          }
+
+          const defaultHeaders: Record<string, string> = { Server: 'Apache/2.4.49 (Unix)' };
+          return {
+            statusCode: 403,
+            contentType: 'text/html; charset=UTF-8',
+            body: '<!DOCTYPE html><html><head><title>403 Forbidden</title></head><body><h1>403 Forbidden</h1><p>Access denied. Valid administrator session cookie (session_id or role=admin) required.</p></body></html>',
+            headers: defaultHeaders,
+          };
+        },
       },
       {
         path: '/uploads',
@@ -412,28 +498,30 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
             bodyStr.includes("UNION SELECT") ||
             bodyStr.includes("union select");
 
-          if (isSqli) {
+          const isCredMatch = bodyStr.includes('finance_admin') && (bodyStr.includes('banker123') || bodyStr.includes('password'));
+
+          if (isSqli || isCredMatch) {
             return {
               statusCode: 200,
               contentType: 'application/json',
               body: JSON.stringify({
                 success: true,
-                message: 'Authentication bypass successful via SQL injection!',
+                message: isSqli ? 'Authentication bypass successful via SQL injection!' : 'Authentication successful',
                 user: 'admin',
                 role: 'finance_admin',
                 token: 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VyIjoiYWRtaW4iLCJyb2xlIjoiZmluYW5jZV9hZG1pbiJ9.',
-                database_debug: {
+                database_debug: isSqli ? {
                   query: "SELECT id, username, role, password_hash FROM users WHERE username = 'admin' OR 1=1 --' AND password = '***'",
                   matched_rows: 1,
                   vulnerability: 'CWE-89: Direct string concatenation into SQL query',
                   remediation: 'Use parameterized queries: db.execute("SELECT ... WHERE username = ? AND password = ?", [username, password])',
-                },
+                } : undefined,
               }),
-              triggerEvent: {
+              triggerEvent: isSqli ? {
                 type: 'VULNERABILITY_IDENTIFIED',
                 payload: { cve: 'CWE-89 (SQLi Auth Bypass)', endpoint: '/api/login' },
                 xp: 25,
-              },
+              } : undefined,
             };
           }
 
@@ -451,8 +539,11 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
         contentType: 'application/json',
         responseBody: '{"error":"Unauthorized: Missing Bearer Token"}',
         handler: (req) => {
-          const auth = req.headers['authorization'] || req.headers['Authorization'] || '';
-          if (!auth) {
+          const authHeader = req.headers['authorization'] || req.headers['Authorization'] || '';
+          const cookieHeader = req.headers['cookie'] || req.headers['Cookie'] || '';
+          const auth = `${authHeader} ${cookieHeader}`;
+
+          if (!auth.trim()) {
             return {
               statusCode: 401,
               contentType: 'application/json',
@@ -493,29 +584,72 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
       },
       {
         path: '/api/users',
-        methods: ['GET'],
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
         statusCode: 200,
         contentType: 'application/json',
         responseBody: '{"error":"Unauthorized"}',
         handler: (req) => {
           const auth = req.headers['authorization'] || req.headers['Authorization'] || '';
-          if (!auth) {
+          const cookies = req.headers['cookie'] || req.headers['Cookie'] || '';
+          if (!auth && !cookies.includes('auth_token=')) {
             return {
               statusCode: 401,
               contentType: 'application/json',
-              body: JSON.stringify({ error: 'Unauthorized: Authentication required' }),
+              body: JSON.stringify({ error: 'Unauthorized: Authentication required (Bearer token or auth_token cookie)' }),
             };
           }
+
+          if (req.method === 'POST') {
+            return {
+              statusCode: 201,
+              contentType: 'application/json',
+              body: JSON.stringify({
+                success: true,
+                message: 'User provisioned in financial database',
+                user: { id: 4, username: 'auditor', role: 'auditor' },
+              }, null, 2),
+            };
+          }
+
+          if (req.method === 'PUT' || req.method === 'PATCH') {
+            return {
+              statusCode: 200,
+              contentType: 'application/json',
+              body: JSON.stringify({
+                success: true,
+                message: 'User record patched successfully',
+                method: req.method,
+              }, null, 2),
+            };
+          }
+
+          if (req.method === 'DELETE') {
+            return {
+              statusCode: 200,
+              contentType: 'application/json',
+              body: JSON.stringify({
+                success: true,
+                message: 'User record purged from MySQL',
+              }),
+            };
+          }
+
+          const roleFilter = req.queryParams?.role || (req.path.includes('role=') ? req.path.split('role=')[1].split('&')[0] : undefined);
+          const allUsers = [
+            { id: 1, username: 'admin', role: 'finance_admin', email: 'admin@ironbank.htb' },
+            { id: 2, username: 'finance_admin', role: 'finance_admin', email: 'finance@ironbank.htb', ssh_enabled: true },
+            { id: 3, username: 'node_app', role: 'service', email: 'service@ironbank.htb' },
+          ];
+
+          const filtered = roleFilter ? allUsers.filter(u => u.role.toLowerCase() === roleFilter.toLowerCase()) : allUsers;
+
           return {
             statusCode: 200,
             contentType: 'application/json',
             body: JSON.stringify({
-              users: [
-                { id: 1, username: 'admin', role: 'finance_admin', email: 'admin@ironbank.htb' },
-                { id: 2, username: 'finance_admin', role: 'finance_admin', email: 'finance@ironbank.htb', ssh_enabled: true },
-                { id: 3, username: 'node_app', role: 'service', email: 'service@ironbank.htb' },
-              ],
-            }),
+              count: filtered.length,
+              users: filtered,
+            }, null, 2),
           };
         },
       },
@@ -641,6 +775,51 @@ export const SIMULATED_MACHINES: SimulatedMachineConfig[] = [
         service: 'microsoft-ds',
         version: 'Windows Server 2019 Standard 17763 microsoft-ds',
         state: 'open',
+      },
+    ],
+    webRoutes: [
+      {
+        path: '/',
+        methods: ['GET', 'HEAD'],
+        statusCode: 200,
+        contentType: 'text/html; charset=UTF-8',
+        responseBody: `<!DOCTYPE html><html><head><title>OmniCorp DC01 - Microsoft IIS 10.0</title></head><body style="font-family:Segoe UI,sans-serif;background:#1e1e1e;color:#fff;padding:40px;"><h1>Internet Information Services (IIS) 10.0</h1><p>OmniCorp Active Directory Domain Controller (corp.local)</p><hr/><p>Services: <a href="/certsrv">Active Directory Certificate Services</a> | <a href="/adfs/ls">ADFS SSO</a> | <a href="/health">Health API</a></p></body></html>`,
+      },
+      {
+        path: '/certsrv',
+        methods: ['GET', 'POST'],
+        statusCode: 200,
+        contentType: 'text/html; charset=UTF-8',
+        responseBody: `<!DOCTYPE html><html><head><title>Microsoft Active Directory Certificate Services</title></head><body style="font-family:sans-serif;background:#0f172a;color:#e2e8f0;padding:30px;"><h2>Microsoft Active Directory Certificate Services</h2><p>Certification Authority: <strong>corp-dc01-CA</strong></p><p>Enrollment web service online. Domain: <code>CORP.LOCAL</code></p><p>Service Principal Name: <code>MSSQLSvc/corp-dc01.omnicorp.local:1433</code></p></body></html>`,
+      },
+      {
+        path: '/adfs/ls',
+        methods: ['GET'],
+        statusCode: 200,
+        contentType: 'text/html; charset=UTF-8',
+        responseBody: `<!DOCTYPE html><html><head><title>Active Directory Federation Services</title></head><body><h2>OmniCorp Federation Service</h2><p>Sign in with your organizational account (CORP\\username)</p></body></html>`,
+      },
+      {
+        path: '/wsman',
+        methods: ['GET', 'POST'],
+        statusCode: 200,
+        contentType: 'application/soap+xml;charset=UTF-8',
+        responseBody: `<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Header/><s:Body><wsmid:IdentifyResponse xmlns:wsmid="http://schemas.dmtf.org/wbem/wsman/identity/1/wsmanidentity.xsd"><wsmid:ProtocolVersion>http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd</wsmid:ProtocolVersion><wsmid:ProductVendor>Microsoft Corporation</wsmid:ProductVendor><wsmid:ProductVersion>OS: 10.0.17763 SP: 0.0 Stack: 3.0</wsmid:ProductVersion></wsmid:IdentifyResponse></s:Body></s:Envelope>`,
+      },
+      {
+        path: '/health',
+        methods: ['GET'],
+        statusCode: 200,
+        contentType: 'application/json',
+        responseBody: JSON.stringify({
+          domain: 'corp.local',
+          forest: 'omnicorp.local',
+          domain_controller: 'CORP-DC01',
+          kerberos_kdc: 'ONLINE',
+          ldap_service: 'ONLINE',
+          smb_shares: ['SYSVOL', 'NETLOGON', 'Replication'],
+          active_sessions: 14,
+        }, null, 2),
       },
     ],
     users: [

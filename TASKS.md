@@ -92,3 +92,22 @@
 - [x] Graph state stays strictly synchronized after challenge resets and page refreshes.
 - [x] Automated test suite (`src/tests/phase6AttackGraph.test.ts`) covering all 17 test cases across topology derivation, fog-of-war, event reactions, search/filters, and resets (123 total tests).
 
+## Phase 7: Built-in Web Security Proxy Interface and HTTP Repeater
+- [x] HTTP method selection supporting `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, and `HEAD`.
+- [x] Dynamic URL path and query string synchronization (bi-directional sync between path bar and parameters table).
+- [x] Query parameter editing table with Key, Value, Description, and enable/disable checkboxes.
+- [x] Request headers editor supporting structured key-value table and raw text mode toggle.
+- [x] Cookie Jar editor with structured key-value entries synced automatically with the `Cookie:` header.
+- [x] Request body editor supporting JSON, x-www-form-urlencoded, and raw text formats.
+- [x] Prettify JSON formatting helper and quick payload inject buttons.
+- [x] Send Request action with keyboard shortcut (`Ctrl+Enter` / `Cmd+Enter`) and realistic duration simulation (15–75ms).
+- [x] Response status badge, content-type, content-length, round-trip timing, and headers inspector.
+- [x] Multi-mode response body viewer: Pretty JSON, Raw HTTP text, and sandboxed rendered HTML preview.
+- [x] Request history tracking with chronological execution log, method badges, status codes, and instant replay into editor.
+- [x] Quick export controls: "Copy as cURL", "Copy Raw Request", "Copy Raw Response", and "Copy Body".
+- [x] Attack vector preset library: Log4Shell JNDI injection (`User-Agent` / `X-Forwarded-For`), SQLi auth bypass, JWT `alg: none` forgery, Admin session cookie, and ADCS web enrollment.
+- [x] Strict security boundary: prevents loopback (`127.0.0.1`, `localhost`), cloud metadata (`169.254.x.x`), and arbitrary external hosts (`google.com`) with 403 Security Boundary Violation.
+- [x] Integration with simulation engine: triggers service/port discovery, route enumeration, vulnerability discovery, and evidence creation (`addEvidence`).
+- [x] Complete automated test suite (`src/tests/phase7WebRepeater.test.ts`) covering methods, query params, headers, cookies, route discovery, security boundaries, and AD endpoints (22 tests, 145 total passing tests).
+
+

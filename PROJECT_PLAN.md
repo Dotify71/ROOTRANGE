@@ -56,9 +56,17 @@ ROOTRANGE is an open-source, in-browser Cyber Range and Gamified Penetration Tes
 - Fully automated test suite (`src/tests/phase6AttackGraph.test.ts`) validating state derivation, event reactions, fog-of-war isolation, search, filters, and resets (123 total tests).
 
 ### Phase 7: In-Browser Web Proxy & Repeater
-- Intercept and replay raw HTTP requests.
-- Exploit presets for JNDI LDAP lookup strings and SQL injection bypasses.
-- Raw text and rendered HTML response inspectors.
+- Advanced HTTP request composer supporting GET, POST, PUT, PATCH, DELETE, OPTIONS, and HEAD (`RequestEditor.tsx`).
+- Bi-directional synchronization between URL query strings and structured query parameter tables.
+- Request headers editor with structured key-value rows and toggleable raw text mode.
+- Interactive Cookie Jar manager synced directly with the `Cookie:` HTTP request header.
+- Multi-format request body editor (JSON, form-urlencoded, raw) with auto-formatting "Prettify JSON".
+- Exploit presets library for Log4Shell JNDI injection, SQLi auth bypass, JWT `alg: none` forgery, session cookies, and ADCS web enrollment (`repeaterPresets.ts`).
+- Response inspector with status badge, round-trip timing, content-type, content-length, headers table, Pretty JSON, Raw HTTP text, and sandboxed rendered HTML preview (`ResponseViewer.tsx`).
+- Request history tracking with execution log and one-click request replay (`RequestHistoryDrawer.tsx`).
+- Quick export utilities ("Copy as cURL", "Copy Raw Request", "Copy Raw Response", "Copy Body").
+- Strict in-browser security boundary preventing loopback/localhost, cloud metadata (169.254.x.x), and external internet access.
+- Fully automated test suite (`src/tests/phase7WebRepeater.test.ts`) validating methods, parameters, cookies, headers, exploit triggers, route discovery, and security boundaries (22 tests, 145 total passing).
 
 ### Phase 8: GhostOps AI Offensive Copilot
 - Socratic Mentor providing progressive hints without spoiling flags.

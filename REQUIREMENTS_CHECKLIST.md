@@ -44,4 +44,11 @@
 | **REQ-40** | Interactive Controls, Search, & Filters | **Verified** | Zoom, pan, fit-to-view, reset layout, live search, and 7 state filter tabs with count badges in `AttackGraphControls.tsx`. |
 | **REQ-41** | Forensics Drawer & Accessible Table | **Verified** | `AttackGraphDetailsDrawer.tsx` provides rich forensics inspection and action buttons; `AttackGraphAccessibleTable.tsx` provides semantic table alternative. |
 | **REQ-42** | Attack Graph Automated Verification | **Verified** | `src/tests/phase6AttackGraph.test.ts` exercises 17 test cases covering topology derivation, fog-of-war, event reactions, search/filters, and resets (123 total tests). |
+| **REQ-43** | HTTP Methods & Dynamic URL/Path Sync | **Verified** | Supports `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, `HEAD` with bi-directional query param and path editing in `RequestEditor.tsx`. |
+| **REQ-44** | Query Params, Headers, & Cookie Jar | **Verified** | Structured key-value editors with toggleable rows, raw header input, and Cookie Jar synced with `Cookie:` request header in `RequestEditor.tsx`. |
+| **REQ-45** | Response Viewers & Simulated Timing | **Verified** | Status badge, headers table, Pretty JSON, Raw text, and sandboxed HTML preview with 15–75ms simulated round-trip timing in `ResponseViewer.tsx`. |
+| **REQ-46** | Exploit Presets & History Replay | **Verified** | 7 pre-configured offensive payloads (Log4Shell, SQLi, JWT alg: none, ADCS) in `repeaterPresets.ts` and request history replay drawer in `RequestHistoryDrawer.tsx`. |
+| **REQ-47** | Strict Security Boundary & SSRF Defense | **Verified** | Rejects localhost/loopback, cloud metadata (169.254.x.x), and external internet domains with 403 Security Boundary Violation. |
+| **REQ-48** | Repeater Unit & Integration Tests | **Verified** | `src/tests/phase7WebRepeater.test.ts` validates all methods, params, injection vectors, cookies, route discovery, and security boundaries (22 tests, 145 total passing). |
+
 
