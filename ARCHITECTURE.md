@@ -1,86 +1,116 @@
 # ROOTRANGE System Architecture
 
-## Overview
-ROOTRANGE operates as a high-performance, client-side cyber range application executed completely in the browser with zero cloud compute requirements.
+## 1. System Overview
 
-## Architecture Diagram
+ROOTRANGE is a high-performance, client-side cyber range and penetration testing training platform. It operates 100% within the user's browser, eliminating the need for expensive cloud compute, virtualization infrastructure, or VPN tunnels, while delivering a realistic and educationally grounded offensive security experience.
 
 ```
-┌────────────────────────────────────────────────────────┐
-│                   ROOTRANGE APPLICATION                │
-├────────────────────────────────────────────────────────┤
-│ Presentation Layer (React 18 + Tailwind CSS + Lucide)  │
-│ • AppShell: Workstation Sidebar & Status Header        │
-│ • 10 Functional Route Modules (Range, Graph, AI, etc.) │
-│ • Web Audio API Synthesizer (Keystrokes, Pings, Alarms)│
-├────────────────────────────────────────────────────────┤
-│ State Management (Zustand Store)                       │
-│ • Active Target Machine Selection                      │
-│ • Network Node Compromise Graph States                 │
-│ • Flag Submission & Score / Rank Calculations          │
-├────────────────────────────────────────────────────────┤
-│ Execution Engine (Virtual Linux Shell & Network Sim)   │
-│ • VirtualFileSystem (In-memory nodes, permissions)     │
-│ • CommandInterpreter (Pipes, nmap, gobuster, hydra)   │
-│ • Interactive Reverse Shell & Sudo Privilege Daemon    │
-└────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                           ROOTRANGE APPLICATION SHELL                          │
+├────────────────────────────────────────────────────────────────────────────────┤
+│ Presentation Layer (React 18 + Tailwind CSS + Lucide + Web Audio API)          │
+│ • AppShell: Workstation Sidebar, Top Status Header, Telemetry, and CRT Shader   │
+│ • 10 Functional Route Modules (Terminal, Attack Graph, Web Repeater, AI, etc.) │
+│ • Accessible Dialogs: ConfirmDialog (alertdialog), ShortcutsModal (Ctrl+K)    │
+├────────────────────────────────────────────────────────────────────────────────┤
+│ State Management & Data Layer (Zustand 5 + IndexedDB)                          │
+│ • useGameStore: Active target, compromise levels, scores, flags, achievements  │
+│ • usePreferencesStore: Volume, mute state, CRT shaders, motion, terminal font  │
+│ • PersistenceService: Schema v1 IndexedDB + localStorage fallback              │
+├────────────────────────────────────────────────────────────────────────────────┤
+│ Core Simulation & Execution Engine (Deterministic Virtual State Machine)       │
+│ • SimulationEngine: Subnet router, service discovery, objectives, event bus   │
+│ • VirtualFileSystem: In-memory POSIX filesystem, octal modes, UID/GID checks   │
+│ • CommandRegistry & Interpreter: Tokenizer, pipelines, redirection, adapters  │
+│ • AttackGraphTopology: Pure deterministic React Flow node & edge derivation    │
+│ • GhostOps AI: Socratic mentor, Payload forge, Autopilot, and LLM adapters     │
+└────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Directory Structure
+---
+
+## 2. Directory Structure
+
 ```
 ROOTRANGE/
+├── .github/
+│   └── workflows/
+│       └── ci.yml               # GitHub Actions CI workflow
+├── docs/                        # Comprehensive documentation suite
+│   ├── AI_PROVIDERS.md          # GhostOps AI provider setup
+│   ├── CHALLENGE_AUTHORING.md   # Guide for adding new vulnerable targets
+│   ├── DEVELOPMENT.md           # Developer workflow and coding standards
+│   ├── ENV_VARS.md              # Environment variable reference
+│   ├── INSTALLATION.md          # Setup and deployment guide
+│   ├── SECURITY_MODEL.md        # Sandboxing and threat model
+│   ├── SIMULATION_ENGINE.md     # Simulation engine and event bus
+│   ├── TESTING.md               # Testing guide and suite overview
+│   └── TROUBLESHOOTING.md       # Diagnostic guide for common issues
 ├── src/
-│   ├── audio/           # Procedural Web Audio API sound synthesizer
-│   ├── components/      # UI components (PwnboxTerminal, AttackGraph, HttpRepeater, etc.)
-│   │   └── layout/      # AppShell, Sidebar, TopStatusBar
-│   ├── pages/           # 10 Functional Route Pages
-│   ├── services/        # VirtualFileSystem, ShellParser, CommandRegistry, and CommandInterpreter
-│   ├── simulation/      # Deterministic Cyber Range Simulation Engine
-│   │   ├── adapters/    # Deterministic Command Adapters (nmap, gobuster, curl, etc.)
-│   │   ├── machineDefinitions.ts # Typed machine configs and network subnets
-│   │   ├── simulationEngine.ts   # Core engine, event bus, sessions, and state serialization
-│   │   └── types.ts              # Typed domain models, events, and objectives
-│   ├── store/           # Zustand state store
-│   ├── tests/           # Vitest unit and integration test suites
-│   ├── types/           # TypeScript domain definitions
-│   ├── App.tsx          # Root router configuration
-│   ├── main.tsx         # Application entrypoint
-│   └── index.css        # Tailwind styling & cyber scrollbars
-
-## Simulation Engine Architecture (Phase 3)
-
-The simulation engine is designed as a deterministic, event-driven virtual penetration testing sandbox:
-
+│   ├── audio/                   # Procedural Web Audio API sound synthesizer
+│   │   └── soundManager.ts
+│   ├── components/              # UI components
+│   │   ├── attack-graph/        # React Flow custom nodes, controls, and drawer
+│   │   ├── layout/              # AppShell, Sidebar, TopStatusBar
+│   │   ├── ConfirmDialog.tsx    # Accessible alertdialog modal
+│   │   ├── FlagSubmissionModal.tsx # Flag validator with confetti
+│   │   ├── GhostOpsAi.tsx       # AI mentor, forge, and autopilot
+│   │   ├── HttpRepeater.tsx     # Web security proxy and repeater
+│   │   ├── KeyboardShortcutsModal.tsx # Shortcuts documentation dialog
+│   │   └── PwnboxTerminal.tsx   # Interactive terminal shell
+│   ├── pages/                   # 10 Route pages
+│   ├── services/                # Core engines and services
+│   │   ├── ai/                  # AI providers and mentor logic
+│   │   ├── commandInterpreter.ts
+│   │   ├── commandRegistry.ts
+│   │   ├── flagRegistry.ts
+│   │   ├── persistenceService.ts
+│   │   ├── progressionCalculator.ts
+│   │   ├── shellParser.ts
+│   │   └── virtualFs.ts
+│   ├── simulation/              # Simulation engine, adapters, definitions
+│   │   ├── adapters/            # nmap, gobuster, curl, nc, ssh, sudo, etc.
+│   │   ├── attackGraphTopology.ts
+│   │   ├── machineDefinitions.ts
+│   │   ├── simulationEngine.ts
+│   │   └── types.ts
+│   ├── store/                   # Zustand stores (gameStore, preferencesStore)
+│   ├── tests/                   # 19 Vitest test suites (219 passing tests)
+│   ├── types/                   # TypeScript interfaces
+│   ├── App.tsx                  # Root application router
+│   └── main.tsx                 # Entrypoint
+├── CONTRIBUTING.md              # Open source contribution guide
+├── LICENSE                      # MIT License
+├── PROJECT_PLAN.md              # Complete 12-phase project plan
+├── README.md                    # Primary repository overview
+├── RELEASE_NOTES.md             # v1.0.0 official release notes
+├── REQUIREMENTS_CHECKLIST.md    # Formal requirements traceability matrix
+└── TASKS.md                     # Completed task tracker
 ```
-┌────────────────────────────────────────────────────────┐
-│                   SIMULATION ENGINE                    │
-├────────────────────────────────────────────────────────┤
-│ Subnet & Network Routing (Pivoting & Gateway Enforcer) │
-│ • DMZ (10.10.11.0/24) -> Directly accessible           │
-│ • Internal Banking (10.10.12.0/24) -> Requires Pivot   │
-│ • AD Forest (10.10.13.0/24) -> Requires Domain Pivot   │
-├────────────────────────────────────────────────────────┤
-│ Typed Event Bus (11 Event Types)                       │
-│ • SERVICE_DISCOVERED, DIRECTORY_DISCOVERED             │
-│ • VULNERABILITY_IDENTIFIED, CREDENTIAL_DISCOVERED      │
-│ • INITIAL_ACCESS_GRANTED, SESSION_ESTABLISHED          │
-│ • PRIVILEGE_ESCALATED, MACHINE_COMPROMISED             │
-│ • CHALLENGE_COMPLETED, FLAG_CAPTURED                   │
-├────────────────────────────────────────────────────────┤
-│ Challenge Progression & Evidence Vault                 │
-│ • Prerequisite objective graph validation              │
-│ • Deduplicated loot & credential discovery             │
-│ • Active interactive sessions (SSH, reverse shells)   │
-├────────────────────────────────────────────────────────┤
-│ Deterministic Command Adapters                         │
-│ • nmap, gobuster, curl, ssh, sudo, hydra, sqlmap, nc   │
-│ • linpeas.sh, ps aux                                   │
-└────────────────────────────────────────────────────────┘
-```
-├── .env.example         # Environment template
-├── ARCHITECTURE.md      # System architecture specification
-├── PROJECT_PLAN.md      # Development roadmap
-├── REQUIREMENTS_CHECKLIST.md # Traceability checklist
-├── TASKS.md             # Work tracking breakdown
-└── package.json         # Package configuration
-```
+
+---
+
+## 3. Component Interaction & Data Flow
+
+### A. Terminal Execution Flow
+1. User enters command in `PwnboxTerminal.tsx`.
+2. Audio manager plays procedural mechanical keystroke sound.
+3. `ShellParser.parse` tokenizes input, checks for pipes (`|`) and redirects (`>`, `>>`) without `eval()`.
+4. `CommandInterpreter.execute` resolves handlers from `CommandRegistry`.
+5. Handlers call `SimulatedCommandAdapters` (e.g. `nmap`, `gobuster`, `curl`, `nc`).
+6. Adapters check network reachability via `SimulationEngine.canReachIp`.
+7. Adapters update discovered ports and evaluate challenge objective prerequisites.
+8. If a shell spawns (e.g. `nc -lvnp 4444` catching Log4j reverse shell), `enterShell` context updates the terminal prompt and working directory.
+
+### B. Attack Graph Derivation Flow
+1. `SimulationEngine` maintains discovered ports, compromise levels, and claimed flags.
+2. `buildAttackGraphTopology` runs as a pure deterministic mapping function taking `SimulationEngine` state.
+3. Node states (`unknown` $\to$ `discovered` $\to$ `reachable` $\to$ `vulnerable` $\to$ `initial-access` $\to$ `privileged` $\to$ `compromised` $\to$ `completed`) are computed.
+4. Downstream nodes (`iron-vault`, `corp-dc01`) remain in Fog-of-War until upstream pivot footholds (`ecorp-hr`) are compromised.
+5. React Flow renders custom SVG nodes and animated directed edges.
+
+### C. Flag Submission & Progression Flow
+1. User submits a flag token in `FlagSubmissionModal.tsx` or Terminal.
+2. `gameStore.submitFlag` checks duplicate claims: duplicate submissions are rejected with 0 XP.
+3. Valid flags award XP, recalculate rank (`Script Kiddie` $\to$ `Hacker` $\to$ `Pro Hacker` $\to$ `Elite` $\to$ `Omni God`), and evaluate 8 event-driven achievements.
+4. Updated engagement state is persisted immediately to IndexedDB via `PersistenceService`.
