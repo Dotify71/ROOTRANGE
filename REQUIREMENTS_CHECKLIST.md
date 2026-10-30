@@ -57,6 +57,13 @@
 | **REQ-53** | IndexedDB & Versioned Save State | **Verified** | `persistenceService.ts` implements version 1 schema validation, localStorage fallback, and deep corrupted-payload rejection. |
 | **REQ-54** | Live Dashboard Metrics & Unified Loot Vault | **Verified** | `DashboardPage.tsx` derives all metrics from progression store; `InventoryPage.tsx` unifies flags, evidence, and hashes with search. |
 | **REQ-55** | Progression Automated Verification | **Verified** | `src/tests/phase8Progression.test.ts` covers flag claims, duplicate blocks, ranks, achievements, persistence, and resets (20 tests, 165 total passing). |
+| **REQ-56** | Socratic Mentor Mode & Graduated Hints | **Verified** | Implemented 5 levels of progressive hints grounded in target configuration, active evidence, and real-time compromise level in `ghostOpsProviders.ts`. |
+| **REQ-57** | Zero-Dependency Offline Reasoning Provider | **Verified** | `OfflineDeterministicProvider` functions out-of-the-box with no paid API keys or external network dependencies required. |
+| **REQ-58** | Training Payload Forge & Safety Boundaries | **Verified** | Interactive template composer with configurable parameters in `payloadTemplates.ts` with no automated execution and clear safety notes. |
+| **REQ-59** | Adversary Autopilot Simulation | **Verified** | Step-by-step autopilot engine with Pause, Step-Forward, and Reset controls operating through genuine simulation rules in `autopilotService.ts`. |
+| **REQ-60** | Pluggable Provider Abstraction & Resilient Fallback | **Verified** | `ExternalAiAdapterProvider` supports Ollama, OpenAI, Anthropic, and Gemini, gracefully falling back to offline provider on missing keys or network errors. |
+| **REQ-61** | GhostOps Automated Verification | **Verified** | `src/tests/phase9GhostOpsAi.test.ts` exercises all 5 hint levels, template rendering, autopilot constraints, and provider failure handling (16 tests, 181 total passing). |
+
 
 
 

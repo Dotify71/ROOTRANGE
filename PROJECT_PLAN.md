@@ -79,6 +79,14 @@ ROOTRANGE is an open-source, in-browser Cyber Range and Gamified Penetration Tes
 - Unified Loot Vault combining captured flags, credentials, JWTs, and evidence items with full text search and category tabs (`InventoryPage.tsx`).
 - Comprehensive automated test suite (`src/tests/phase8Progression.test.ts`) covering all progression rules, achievements, and persistence operations (20 tests, 165 total passing).
 
-### Phase 9: Final Hardening & Verification
+### Phase 9: GhostOps AI Pluggable Copilot & Educational Assistant
+- Socratic Mentor Mode delivering 5 graduated hint depths (Direction -> Category -> Evidence -> Next Step -> Full Walkthrough).
+- Offline Deterministic Engine functioning as the default, zero-dependency reasoning provider.
+- Configurable Payload Forge generating educational reverse shells, web injections, privesc escapes, and Kerberoasting commands.
+- Autopilot Adversary Simulation demonstrating automated kill chain progression with Pause, Step-Forward, and Reset controls.
+- Typed Provider Abstraction for Local Ollama, OpenAI, Anthropic, and Google Gemini with graceful error fallback.
+- Automated test suite (`src/tests/phase9GhostOpsAi.test.ts`) validating offline guidance, templates, autopilot constraints, and provider failure handling (16 tests, 181 total passing).
+
+### Phase 10: Final Hardening & Verification
 - End-to-end integration test suites across full cyber range operations.
 - Production build optimization and deployment readiness.
