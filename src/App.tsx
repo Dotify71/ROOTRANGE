@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Terminal, Network, Globe, Bot, Shield, Trophy } from 'lucide-react';
+import { PwnboxTerminal } from './components/PwnboxTerminal';
+import { useGameStore } from './store/gameStore';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'TERMINAL' | 'GRAPH' | 'REPEATER' | 'AI'>('TERMINAL');
-  const [score] = useState<number>(0);
-  const [rank] = useState<string>('Script Kiddie');
+  const { score, rank } = useGameStore();
 
   return (
     <div className="flex flex-col h-screen w-screen bg-[#0a0d14] text-slate-200 select-none overflow-hidden font-mono text-xs">
@@ -75,14 +76,8 @@ export const App: React.FC = () => {
       </header>
 
       {/* Main Interactive Stage */}
-      <main className="flex-1 overflow-hidden relative">
-        {activeTab === 'TERMINAL' && (
-          <div className="p-4 h-full flex flex-col justify-center items-center text-slate-500">
-            <Terminal className="w-12 h-12 text-emerald-500/50 mb-3 animate-pulse" />
-            <p className="text-sm text-slate-300 font-bold">PWNBOX VIRTUAL TERMINAL INITIALIZING...</p>
-            <p className="text-xs text-slate-500 mt-1">Booting virtual Linux container with offensive tools suite...</p>
-          </div>
-        )}
+      <main className="flex-1 overflow-hidden relative p-2">
+        {activeTab === 'TERMINAL' && <PwnboxTerminal />}
       </main>
 
       {/* Footer Status Bar */}
