@@ -135,5 +135,19 @@
 - [x] Unified Loot Vault (`InventoryPage.tsx`) merging captured CTF flags, credentials, JWTs, and evidence items with search and category filtering.
 - [x] Complete automated test suite (`src/tests/phase8Progression.test.ts`) covering flags, ranks, achievements, persistence, and resets (20 tests, 165 total passing tests).
 
+## Phase 9: GhostOps AI Pluggable Copilot & Educational Assistant
+- [x] Socratic Mentor mode with graduated hints (Level 1 General Direction -> Level 2 Service/Vuln Category -> Level 3 Specific Evidence -> Level 4 Next Step -> Level 5 Full Walkthrough) in `ghostOpsProviders.ts`.
+- [x] Hints dynamically grounded in target machine's actual active configuration, discovered evidence, and real-time compromise level (`RECON`, `FOOTHOLD`, `PRIVESC`, `ROOTED`).
+- [x] Deterministic offline hint provider as zero-dependency default (`OfflineDeterministicProvider`).
+- [x] Payload Forge template composer with configurable parameters (LHOST, LPORT, target users, search paths) in `payloadTemplates.ts`.
+- [x] Explicit safety boundaries: templates do not execute automatically and are clearly labeled with educational warnings.
+- [x] Adversary Autopilot simulation mode with Pause, Resume, Step-Forward, and Reset controls (`autopilotService.ts`).
+- [x] Autopilot operates through genuine simulation engine prerequisites, network boundary reachability, and flag submission mechanics without fabricated state.
+- [x] Pluggable provider abstraction supporting Offline engine, local Ollama (`http://localhost:11434`), OpenAI-compatible, Anthropic-compatible, and Google Gemini APIs in `externalAiProvider.ts`.
+- [x] Resilient failure handling: missing credentials, network disconnects, and rate limits gracefully fall back to the offline deterministic provider without application crashes.
+- [x] Zero credential exposure: API keys are maintained in session memory and never committed or baked into production bundles.
+- [x] Complete automated test suite (`src/tests/phase9GhostOpsAi.test.ts`) covering all 5 hint levels, parameter rendering, autopilot execution, network isolation, and provider failure handling (16 tests, 181 total passing tests).
+
+
 
 
