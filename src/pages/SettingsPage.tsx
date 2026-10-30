@@ -10,15 +10,35 @@ import {
   AlertCircle,
   FileJson,
   Shield,
+  Monitor,
+  Eye,
+  Type,
+  Sliders,
 } from 'lucide-react';
 import { useGameStore } from '../store/gameStore';
+import { usePreferencesStore } from '../store/preferencesStore';
 import { soundManager } from '../audio/soundManager';
 import { PersistenceService } from '../services/persistenceService';
 import { RootrangeSaveState } from '../types/progression';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { TerminalFontSize } from '../types/preferences';
 
 export const SettingsPage: React.FC = () => {
   const { exportState, importState, resetGame } = useGameStore();
-  const [isMuted, setIsMuted] = useState<boolean>(soundManager.getMuted());
+  const {
+    volume,
+    setVolume,
+    isMuted,
+    toggleMute,
+    crtActive,
+    setCrtActive,
+    reducedMotion,
+    setReducedMotion,
+    terminalFontSize,
+    setTerminalFontSize,
+  } = usePreferencesStore();
+
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState<boolean>(false);
   const [resetDone, setResetDone] = useState<boolean>(false);
   const [importFeedback, setImportFeedback] = useState<{
     success: boolean;
@@ -28,18 +48,11 @@ export const SettingsPage: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleToggleMute = () => {
-    const muted = soundManager.toggleMute();
-    setIsMuted(muted);
-  };
-
-  const handleResetRange = () => {
-    soundManager.playKey();
-    if (window.confirm('Are you sure you want to completely reset your cyber range progress? All captured flags and scores will be purged.')) {
-      resetGame();
-      setResetDone(true);
-      setTimeout(() => setResetDone(false), 3000);
-    }
+  const handleConfirmReset = () => {
+    resetGame();
+    setIsResetConfirmOpen(false);
+    setResetDone(true);
+    setTimeout(() => setResetDone(false), 3000);
   };
 
   const handleExportSave = () => {
@@ -107,11 +120,153 @@ export const SettingsPage: React.FC = () => {
         <div>
           <h1 className="text-base font-bold text-white flex items-center gap-2">
             <Settings className="w-5 h-5 text-slate-400" />
-            <span>WORKSTATION & RANGE CONFIGURATION</span>
+            <span>WORKSTATION & RANGE CONFIGURATION // ACCESSIBILITY & SETTINGS</span>
           </h1>
           <p className="text-slate-400 text-xs mt-0.5">
-            Configure local audio feedback, persist progress to IndexedDB, and export versioned backup archives.
+            Configure procedural audio, CRT visual shaders, reduced-motion preferences, terminal scaling, and state persistence.
           </p>
+        </div>
+      </div>
+
+      {/* Audio & Synthesizer Settings */}
+      <div className="bg-[#0c1017] border border-slate-800 rounded-xl p-4 space-y-4">
+        <h2 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+          <Volume2 className="w-4 h-4 text-emerald-400" />
+          <span>PROCEDURAL WEB AUDIO SYNTHESIZER</span>
+        </h2>
+
+        {/* Master Mute & Volume Slider */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex items-center justify-between p-3 rounded bg-slate-900/60 border border-slate-800">
+            <div>
+              <div className="font-bold text-white">Master Sound State</div>
+              <div className="text-[11px] text-slate-500">Procedural keystrokes, scan sweeps, shell pops</div>
+            </div>
+            <button
+              onClick={() => toggleMute()}
+              className={`px-3 py-1.5 rounded font-bold text-xs flex items-center gap-1.5 transition focus:outline-none focus:ring-1 focus:ring-emerald-500 ${
+                isMuted
+                  ? 'bg-red-950 text-red-300 border border-red-800'
+                  : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+              }`}
+            >
+              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              <span>{isMuted ? 'AUDIO MUTED' : 'AUDIO ACTIVE'}</span>
+            </button>
+          </div>
+
+          <div className="p-3 rounded bg-slate-900/60 border border-slate-800 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-white flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Volume Level</span>
+              </span>
+              <span className="text-cyan-400 font-bold">{Math.round(volume * 100)}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={(e) => setVolume(parseFloat(e.target.value))}
+              aria-label="Master audio volume"
+              className="w-full accent-emerald-500 cursor-pointer"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Visual & Accessibility Options */}
+      <div className="bg-[#0c1017] border border-slate-800 rounded-xl p-4 space-y-4">
+        <h2 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+          <Eye className="w-4 h-4 text-cyan-400" />
+          <span>VISUAL ACCESSIBILITY & SHADERS</span>
+        </h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* CRT FX Toggle */}
+          <div className="p-3 rounded bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-2">
+            <div>
+              <div className="font-bold text-white flex items-center gap-1.5">
+                <Monitor className="w-4 h-4 text-emerald-400" />
+                <span>Retro CRT Scanlines</span>
+              </div>
+              <p className="text-slate-500 text-[11px] mt-0.5">
+                Subtle phosphor scanlines overlay across the workstation.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                soundManager.playKey();
+                setCrtActive(!crtActive);
+              }}
+              className={`w-full py-1.5 rounded font-bold text-xs transition border focus:outline-none focus:ring-1 focus:ring-emerald-500 ${
+                crtActive
+                  ? 'bg-emerald-950 text-emerald-300 border-emerald-600'
+                  : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+              }`}
+            >
+              {crtActive ? 'ENABLED' : 'DISABLED'}
+            </button>
+          </div>
+
+          {/* Reduced Motion Toggle */}
+          <div className="p-3 rounded bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-2">
+            <div>
+              <div className="font-bold text-white flex items-center gap-1.5">
+                <Eye className="w-4 h-4 text-purple-400" />
+                <span>Reduced Motion</span>
+              </div>
+              <p className="text-slate-500 text-[11px] mt-0.5">
+                Disables confetti, pulsing badges, and rapid animations.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                soundManager.playKey();
+                setReducedMotion(!reducedMotion);
+              }}
+              className={`w-full py-1.5 rounded font-bold text-xs transition border focus:outline-none focus:ring-1 focus:ring-emerald-500 ${
+                reducedMotion
+                  ? 'bg-purple-950 text-purple-300 border-purple-600'
+                  : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+              }`}
+            >
+              {reducedMotion ? 'ENABLED' : 'DISABLED'}
+            </button>
+          </div>
+
+          {/* Terminal Font Scaling */}
+          <div className="p-3 rounded bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-2">
+            <div>
+              <div className="font-bold text-white flex items-center gap-1.5">
+                <Type className="w-4 h-4 text-amber-400" />
+                <span>Terminal Font Size</span>
+              </div>
+              <p className="text-slate-500 text-[11px] mt-0.5">
+                Adjusts typography scale in the Pwnbox terminal buffer.
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-1">
+              {(['sm', 'base', 'lg'] as TerminalFontSize[]).map((size) => (
+                <button
+                  key={size}
+                  onClick={() => {
+                    soundManager.playKey();
+                    setTerminalFontSize(size);
+                  }}
+                  className={`py-1 rounded text-xs font-bold uppercase transition border ${
+                    terminalFontSize === size
+                      ? 'bg-amber-950 text-amber-300 border-amber-600'
+                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -145,7 +300,7 @@ export const SettingsPage: React.FC = () => {
             </div>
             <button
               onClick={handleExportSave}
-              className="w-full py-2 rounded bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 font-bold transition flex items-center justify-center gap-1.5"
+              className="w-full py-2 rounded bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 font-bold transition flex items-center justify-center gap-1.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
             >
               <FileJson className="w-4 h-4" />
               <span>DOWNLOAD SAVE (.JSON)</span>
@@ -174,7 +329,7 @@ export const SettingsPage: React.FC = () => {
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full py-2 rounded bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-800 font-bold transition flex items-center justify-center gap-1.5"
+              className="w-full py-2 rounded bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-800 font-bold transition flex items-center justify-center gap-1.5 focus:outline-none focus:ring-1 focus:ring-purple-500"
             >
               <Upload className="w-4 h-4" />
               <span>SELECT FILE TO RESTORE</span>
@@ -203,29 +358,6 @@ export const SettingsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Audio & Synthesizer Settings */}
-      <div className="bg-[#0c1017] border border-slate-800 rounded-xl p-4 space-y-3">
-        <h2 className="text-xs font-bold text-white uppercase tracking-wider">AUDIO & SYNTHESIZER SETTINGS</h2>
-
-        <div className="flex items-center justify-between p-3 rounded bg-slate-900/60 border border-slate-800">
-          <div>
-            <div className="font-bold text-white">Tactical Web Audio Synthesizer</div>
-            <div className="text-[11px] text-slate-500">Procedural keystroke chatter, scan sweeps, and shell triggers</div>
-          </div>
-          <button
-            onClick={handleToggleMute}
-            className={`px-3 py-1.5 rounded font-bold text-xs flex items-center gap-1.5 transition ${
-              isMuted
-                ? 'bg-red-950 text-red-300 border border-red-800'
-                : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-            }`}
-          >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            <span>{isMuted ? 'AUDIO MUTED' : 'AUDIO ENABLED'}</span>
-          </button>
-        </div>
-      </div>
-
       {/* Range State Management */}
       <div className="bg-[#0c1017] border border-slate-800 rounded-xl p-4 space-y-3">
         <h2 className="text-xs font-bold text-white uppercase tracking-wider">CYBER RANGE STATE CONTROLS</h2>
@@ -236,8 +368,11 @@ export const SettingsPage: React.FC = () => {
             <div className="text-[11px] text-slate-500">Purges all captured flags, scores, and resets machines to locked state</div>
           </div>
           <button
-            onClick={handleResetRange}
-            className="px-3 py-1.5 rounded font-bold text-xs bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800 transition flex items-center gap-1.5"
+            onClick={() => {
+              soundManager.playKey();
+              setIsResetConfirmOpen(true);
+            }}
+            className="px-3 py-1.5 rounded font-bold text-xs bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800 transition flex items-center gap-1.5 focus:outline-none focus:ring-1 focus:ring-red-400"
           >
             <RotateCcw className="w-4 h-4" />
             <span>RESET RANGE</span>
@@ -251,6 +386,18 @@ export const SettingsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Accessible Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={isResetConfirmOpen}
+        title="RESET PENETRATION TEST ENGAGEMENT"
+        message="Are you sure you want to completely reset your cyber range progress? All captured flags, compromise levels, unlocked pivot routes, and earned XP will be permanently purged."
+        confirmLabel="YES, RESET ALL PROGRESS"
+        cancelLabel="CANCEL"
+        isDestructive={true}
+        onConfirm={handleConfirmReset}
+        onCancel={() => setIsResetConfirmOpen(false)}
+      />
     </div>
   );
 };
