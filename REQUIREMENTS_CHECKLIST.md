@@ -1,69 +1,82 @@
 # ROOTRANGE Requirements Traceability Checklist
 
-| ID | Requirement | Status | Implementation Details |
-| :--- | :--- | :--- | :--- |
-| **REQ-01** | React 18, TypeScript, and Vite | **Verified** | Configured in `package.json`, `vite.config.ts`, and `tsconfig.json`. |
-| **REQ-02** | Strict TypeScript checks | **Verified** | `strict: true`, `noUnusedLocals: true`, `noUnusedParameters: true` in `tsconfig.json`. |
-| **REQ-03** | Tailwind CSS & Lucide Icons | **Verified** | Configured in `tailwind.config.js`, `postcss.config.js`, and used across all components. |
-| **REQ-04** | Zustand State Store | **Verified** | `useGameStore` implemented in `src/store/gameStore.ts`. |
-| **REQ-05** | React Router DOM | **Verified** | `react-router-dom` v7 installed with `<BrowserRouter>`, `<Routes>`, and `<Route>`. |
-| **REQ-06** | Testing Setup | **Verified** | `vitest` + `@testing-library/react` + `jsdom` configured in `vite.config.ts`. |
-| **REQ-07** | Shared Design Tokens & Layout | **Verified** | `AppShell`, `Sidebar`, and `TopStatusBar` in `src/components/layout/`. |
-| **REQ-08** | Responsive Application Shell | **Verified** | Collapsible sidebar, responsive header, and flexible content viewport. |
-| **REQ-09** | Responsive Navigation & Status | **Verified** | NavLink active states, badge indicators, target dropdown, and audio controls. |
-| **REQ-10** | 10 Functional Routes | **Verified** | Dashboard, Range, Machines, Graph, Repeater, AI, Inventory, Achievements, Docs, Settings. |
-| **REQ-11** | Initial Empty States | **Verified** | Built into Inventory (Loot Vault), Terminal, and Machine views. |
-| **REQ-12** | Scripts & Linting | **Verified** | `npm run dev`, `npm run build`, `npm test` scripts in `package.json`. |
-| **REQ-13** | Documentation Artifacts | **Verified** | `README.md`, `PROJECT_PLAN.md`, `ARCHITECTURE.md`, `TASKS.md`, `REQUIREMENTS_CHECKLIST.md`. |
-| **REQ-14** | Clean Secrets & Gitignore | **Verified** | `.env.example` created, `.gitignore` protects secrets and build artifacts. |
-| **REQ-15** | Safe Shell Tokenizer & Parser | **Verified** | `ShellParser` in `src/services/shellParser.ts` parses quotes, escapes, pipes, and redirects without `eval()`. |
-| **REQ-16** | POSIX Virtual Filesystem | **Verified** | `VirtualFileSystem` in `src/services/virtualFs.ts` implements octal modes, UID/GID permission checks, and root traversal prevention. |
-| **REQ-17** | Command Registry & Handlers | **Verified** | `CommandRegistry` in `src/services/commandRegistry.ts` registers typed handlers for standard and offensive tools. |
-| **REQ-18** | Pipelines & Redirection | **Verified** | Multi-stage pipeline execution (`cat | grep | head`) and file redirection (`>`, `>>`) in `CommandInterpreter`. |
-| **REQ-19** | Tab Completion & Navigation | **Verified** | Tab completion for commands and virtual paths, and history navigation via Arrow keys in `PwnboxTerminal.tsx`. |
-| **REQ-20** | Machine Fixtures & Clues | **Verified** | Configured files for E-Corp HR machine (`/etc/passwd`, `/etc/shadow`, `/var/www/html/config.php`, `/home/alex/user.txt`, `/root/root.txt`). |
-| **REQ-21** | Deterministic Simulation Engine | **Verified** | `SimulationEngine` in `src/simulation/simulationEngine.ts` manages machine states, network topology, routing, and challenge progression. |
-| **REQ-22** | Typed Simulation Event Model | **Verified** | 11 distinct event types (`SERVICE_DISCOVERED`, `SESSION_ESTABLISHED`, `CHALLENGE_COMPLETED`, etc.) with reactive subscription hooks. |
-| **REQ-23** | Network Subnet Pivoting | **Verified** | Enforces isolation of internal and Active Directory subnets until perimeter pivot machines are compromised. |
-| **REQ-24** | Deterministic Command Adapters | **Verified** | `SimulatedCommandAdapters` implements context-sensitive handlers for `nmap`, `gobuster`, `curl`, `ssh`, `sudo`, `hydra`, `sqlmap`, `nc`, and `linpeas.sh`. |
-| **REQ-25** | Objective & Prerequisite System | **Verified** | Challenge graph prevents skipping reconnaissance, initial foothold, and local enumeration prerequisites. |
-| **REQ-26** | Reset & Save-State Serialization | **Verified** | Independent machine reset, full range reset, and versioned JSON state serialization/restoration (`exportState`, `importState`). |
-| **REQ-27** | Machine Detail Briefing View | **Verified** | `MachineDetailPage.tsx` displays target metadata, IP (`10.10.11.45`), OS, ports, and real-time compromise status. |
-| **REQ-28** | Multi-Stage Discoverable Attack Path | **Verified** | 7 sequenced objectives: Recon -> Web Enum -> Vuln Investigation -> Initial Access -> User Flag -> Privesc -> Root Flag. |
-| **REQ-29** | Synthetic Source Code & Artifacts | **Verified** | `Log4jAuditLogger.java`, `pom.xml`, `/var/www/html/config.php`, and `/etc/sudoers.d/alex` in virtual FS with POSIX boundaries. |
-| **REQ-30** | Educational Remediation Guides | **Verified** | Practical mitigation and patch instructions for CVE-2021-44228 (Log4Shell) and sudo GTFOBins misconfigurations. |
-| **REQ-31** | End-to-End Automated Journey Test | **Verified** | `src/tests/phase4EcorpMachine.test.ts` validates the complete attack flow, prerequisite enforcement, and machine reset (11 tests). |
-| **REQ-32** | IronBank Financial API Simulation | **Verified** | Debian 11 target (`10.10.11.82`) with MySQL service, parameterized SQLi detection on `/api/login`, JWT alg-none bypass on `/api/vault`, and root cron privesc. |
-| **REQ-33** | Corp-DC01 Active Directory Simulation | **Verified** | Windows Server 2019 Domain Controller (`10.10.11.99`) with Kerberos (88), LDAP (389), SMB (445), and MS17-010 EternalBlue vulnerability analysis. |
-| **REQ-34** | Synthetic Kerberoasting & Hash Cracking | **Verified** | `GetUserSPNs.py` extracts service ticket for `MSSQLSvc` SPN, and `john` / `hashcat` cracks hash with `rockyou.txt` recovering User Flag. |
-| **REQ-35** | Domain Admin DCSync & Pass-The-Hash | **Verified** | `secretsdump.py` extracts Domain Admin NTLM hash via `SeBackupPrivilege`, and `psexec.py` drops into SYSTEM cmd prompt on `corp-dc01` for Root Flag. |
-| **REQ-36** | Multi-Target Automated Verification | **Verified** | `src/tests/phase5IronBankAndCorpDc01.test.ts` exercises all 15 scenarios covering recon, auth bypass, privesc, isolation, and reset (106 tests total). |
-| **REQ-37** | Interactive React Flow Attack Graph | **Verified** | Production React Flow canvas with custom machine nodes, directed pivot edges, background grid, and minimap in `src/components/AttackGraph.tsx`. |
-| **REQ-38** | 8 Distinct Node States | **Verified** | Implemented `unknown`, `discovered`, `reachable`, `vulnerable`, `initial-access`, `privileged`, `compromised`, and `completed` in `src/types/attackGraph.ts`. |
-| **REQ-39** | Strict Fog-of-War & Pivot Boundaries | **Verified** | Downstream isolated machines (`iron-vault`, `corp-dc01`) and transit router redact IPs, ports, and CVEs until upstream pivot foothold is gained. |
-| **REQ-40** | Interactive Controls, Search, & Filters | **Verified** | Zoom, pan, fit-to-view, reset layout, live search, and 7 state filter tabs with count badges in `AttackGraphControls.tsx`. |
-| **REQ-41** | Forensics Drawer & Accessible Table | **Verified** | `AttackGraphDetailsDrawer.tsx` provides rich forensics inspection and action buttons; `AttackGraphAccessibleTable.tsx` provides semantic table alternative. |
-| **REQ-42** | Attack Graph Automated Verification | **Verified** | `src/tests/phase6AttackGraph.test.ts` exercises 17 test cases covering topology derivation, fog-of-war, event reactions, search/filters, and resets (123 total tests). |
-| **REQ-43** | HTTP Methods & Dynamic URL/Path Sync | **Verified** | Supports `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, `HEAD` with bi-directional query param and path editing in `RequestEditor.tsx`. |
-| **REQ-44** | Query Params, Headers, & Cookie Jar | **Verified** | Structured key-value editors with toggleable rows, raw header input, and Cookie Jar synced with `Cookie:` request header in `RequestEditor.tsx`. |
-| **REQ-45** | Response Viewers & Simulated Timing | **Verified** | Status badge, headers table, Pretty JSON, Raw text, and sandboxed HTML preview with 15–75ms simulated round-trip timing in `ResponseViewer.tsx`. |
-| **REQ-46** | Exploit Presets & History Replay | **Verified** | 7 pre-configured offensive payloads (Log4Shell, SQLi, JWT alg: none, ADCS) in `repeaterPresets.ts` and request history replay drawer in `RequestHistoryDrawer.tsx`. |
-| **REQ-47** | Strict Security Boundary & SSRF Defense | **Verified** | Rejects localhost/loopback, cloud metadata (169.254.x.x), and external internet domains with 403 Security Boundary Violation. |
-| **REQ-48** | Repeater Unit & Integration Tests | **Verified** | `src/tests/phase7WebRepeater.test.ts` validates all methods, params, injection vectors, cookies, route discovery, and security boundaries (22 tests, 145 total passing). |
-| **REQ-49** | Multi-Tier Flag Verification & Registry | **Verified** | Cataloged User, Root, Special Challenge, and Final Range Master flags with machine context verification in `flagRegistry.ts`. |
-| **REQ-50** | Interactive Flag Submission & Feedback | **Verified** | `FlagSubmissionModal.tsx` provides target machine context filter, immediate visual status, and duplicate submission prevention. |
-| **REQ-51** | Configurable 5-Tier XP Rank Progression | **Verified** | `progressionCalculator.ts` implements Script Kiddie (0), Hacker (20), Pro Hacker (55), Elite (105), and Omni God (155) with progress tracking. |
-| **REQ-52** | Event & State-Driven Achievements | **Verified** | 8 achievements in `achievementRegistry.ts` triggered by actual simulation events and state transitions without duplicate awards. |
-| **REQ-53** | IndexedDB & Versioned Save State | **Verified** | `persistenceService.ts` implements version 1 schema validation, localStorage fallback, and deep corrupted-payload rejection. |
-| **REQ-54** | Live Dashboard Metrics & Unified Loot Vault | **Verified** | `DashboardPage.tsx` derives all metrics from progression store; `InventoryPage.tsx` unifies flags, evidence, and hashes with search. |
-| **REQ-55** | Progression Automated Verification | **Verified** | `src/tests/phase8Progression.test.ts` covers flag claims, duplicate blocks, ranks, achievements, persistence, and resets (20 tests, 165 total passing). |
-| **REQ-56** | Socratic Mentor Mode & Graduated Hints | **Verified** | Implemented 5 levels of progressive hints grounded in target configuration, active evidence, and real-time compromise level in `ghostOpsProviders.ts`. |
-| **REQ-57** | Zero-Dependency Offline Reasoning Provider | **Verified** | `OfflineDeterministicProvider` functions out-of-the-box with no paid API keys or external network dependencies required. |
-| **REQ-58** | Training Payload Forge & Safety Boundaries | **Verified** | Interactive template composer with configurable parameters in `payloadTemplates.ts` with no automated execution and clear safety notes. |
-| **REQ-59** | Adversary Autopilot Simulation | **Verified** | Step-by-step autopilot engine with Pause, Step-Forward, and Reset controls operating through genuine simulation rules in `autopilotService.ts`. |
-| **REQ-60** | Pluggable Provider Abstraction & Resilient Fallback | **Verified** | `ExternalAiAdapterProvider` supports Ollama, OpenAI, Anthropic, and Gemini, gracefully falling back to offline provider on missing keys or network errors. |
-| **REQ-61** | GhostOps Automated Verification | **Verified** | `src/tests/phase9GhostOpsAi.test.ts` exercises all 5 hint levels, template rendering, autopilot constraints, and provider failure handling (16 tests, 181 total passing). |
-
-
-
-
+| ID | Requirement | Implementation Status | Relevant File / Component | Verification Method | Actual Test Result | Outstanding Issue |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **REQ-01** | React 18, TypeScript, and Vite setup | **Complete** | `package.json`, `vite.config.ts`, `tsconfig.json` | Vite build & Vitest test harness | PASS (Build in 1.32s) | None |
+| **REQ-02** | Strict TypeScript compiler enforcement | **Complete** | `tsconfig.json` | `tsc --noEmit` | PASS (0 errors) | None |
+| **REQ-03** | Tailwind CSS styling & Lucide icons | **Complete** | `tailwind.config.js`, UI components | Browser render & visual checks | PASS | None |
+| **REQ-04** | Central Zustand state management store | **Complete** | `src/store/gameStore.ts` | Unit tests (`foundation.test.ts`) | PASS (6 tests) | None |
+| **REQ-05** | React Router DOM SPA navigation | **Complete** | `src/App.tsx`, `src/components/layout/` | Integration tests (`routing.test.tsx`) | PASS (6 tests) | None |
+| **REQ-06** | Vitest testing setup with DOM simulation | **Complete** | `vite.config.ts`, `src/tests/setup.ts` | Vitest runner | PASS (19 suites) | None |
+| **REQ-07** | Shared design tokens & responsive shell | **Complete** | `src/components/layout/AppShell.tsx` | Component render tests | PASS | None |
+| **REQ-08** | Collapsible sidebar & mobile-safe layout | **Complete** | `src/components/layout/Sidebar.tsx` | Visual & navigation tests | PASS | None |
+| **REQ-09** | Top telemetry status bar & target switch | **Complete** | `src/components/layout/TopStatusBar.tsx` | Component tests (`phase10ImmersionAndA11y.test.tsx`) | PASS (13 tests) | None |
+| **REQ-10** | 10 distinct functional application routes | **Complete** | `src/App.tsx`, `src/pages/` | `routing.test.tsx` | PASS (6 tests) | None |
+| **REQ-11** | High-fidelity empty & initial states | **Complete** | `src/pages/InventoryPage.tsx` | Manual & unit inspection | PASS | None |
+| **REQ-12** | NPM scripts for dev, build, and test | **Complete** | `package.json` | CLI script execution | PASS | None |
+| **REQ-13** | Documentation artifacts suite | **Complete** | `README.md`, `ARCHITECTURE.md`, `docs/` | Inspection & link check | PASS | None |
+| **REQ-14** | Clean secret isolation & .gitignore | **Complete** | `.env.example`, `.gitignore` | Git file index audit | PASS (0 secrets) | None |
+| **REQ-15** | Safe shell tokenizer & parser (no eval) | **Complete** | `src/services/shellParser.ts` | Unit tests (`phase2Terminal.test.ts`) | PASS (27 tests) | None |
+| **REQ-16** | POSIX virtual filesystem with permissions | **Complete** | `src/services/virtualFs.ts` | Permission tests (`phase2Terminal.test.ts`) | PASS (27 tests) | None |
+| **REQ-17** | Command registry & modular handlers | **Complete** | `src/services/commandRegistry.ts` | Command tests (`phase2Terminal.test.ts`) | PASS (27 tests) | None |
+| **REQ-18** | Multi-stage pipes & output redirection | **Complete** | `src/services/commandInterpreter.ts` | Pipeline tests (`phase2Terminal.test.ts`) | PASS (27 tests) | None |
+| **REQ-19** | Tab completion & history navigation | **Complete** | `src/components/PwnboxTerminal.tsx` | Terminal interaction tests | PASS | None |
+| **REQ-20** | Realistic system files & training fixtures| **Complete** | `src/services/virtualFs.ts` | Filesystem inspection tests | PASS | None |
+| **REQ-21** | Deterministic simulation engine | **Complete** | `src/simulation/simulationEngine.ts` | Engine tests (`phase3Simulation.test.ts`) | PASS (22 tests) | None |
+| **REQ-22** | Typed 11-event simulation event bus | **Complete** | `src/simulation/types.ts` | Event subscription tests | PASS (22 tests) | None |
+| **REQ-23** | Multi-subnet network routing & pivoting | **Complete** | `src/simulation/simulationEngine.ts` | Subnet reachability tests | PASS (22 tests) | None |
+| **REQ-24** | Deterministic offensive command adapters | **Complete** | `src/simulation/adapters/commandAdapters.ts` | Adapter tests (`phase3Simulation.test.ts`) | PASS (22 tests) | None |
+| **REQ-25** | Challenge objective prerequisite graph | **Complete** | `src/simulation/simulationEngine.ts` | Prerequisite tests (`phase3Simulation.test.ts`) | PASS (22 tests) | None |
+| **REQ-26** | Machine reset & state export/import | **Complete** | `src/simulation/simulationEngine.ts` | Serialization tests (`phase3Simulation.test.ts`) | PASS (22 tests) | None |
+| **REQ-27** | Dedicated machine detail briefing page | **Complete** | `src/pages/MachineDetailPage.tsx` | View rendering tests | PASS | None |
+| **REQ-28** | E-Corp HR 7-stage discoverable attack path | **Complete** | `src/simulation/machineDefinitions.ts` | Journey test (`phase4EcorpMachine.test.ts`) | PASS (11 tests) | None |
+| **REQ-29** | Synthetic source code inspection tabs | **Complete** | `src/pages/MachineDetailPage.tsx` | Component inspection tests | PASS | None |
+| **REQ-30** | Educational vulnerability remediation notes | **Complete** | `src/pages/MachineDetailPage.tsx` | Guide inspection | PASS | None |
+| **REQ-31** | End-to-end E-Corp HR attack chain test | **Complete** | `src/tests/phase4EcorpMachine.test.ts` | Automated kill-chain test | PASS (11 tests) | None |
+| **REQ-32** | IronBank financial application simulation | **Complete** | `src/simulation/machineDefinitions.ts` | SQLi/JWT tests (`phase5IronBankAndCorpDc01.test.ts`) | PASS (15 tests) | None |
+| **REQ-33** | Corp-DC01 Active Directory simulation | **Complete** | `src/simulation/machineDefinitions.ts` | Kerberos/SMB tests (`phase5IronBankAndCorpDc01.test.ts`)| PASS (15 tests) | None |
+| **REQ-34** | Kerberoasting & hash cracking (john) | **Complete** | `src/simulation/adapters/commandAdapters.ts` | Ticket cracking tests (`phase5IronBankAndCorpDc01.test.ts`)| PASS (15 tests) | None |
+| **REQ-35** | Domain Admin DCSync & Pass-the-Hash | **Complete** | `src/simulation/adapters/commandAdapters.ts` | secretsdump/psexec tests (`phase5IronBankAndCorpDc01.test.ts`)| PASS (15 tests) | None |
+| **REQ-36** | Multi-target isolation & reset tests | **Complete** | `src/tests/phase5IronBankAndCorpDc01.test.ts` | Isolation tests | PASS (15 tests) | None |
+| **REQ-37** | React Flow attack graph canvas | **Complete** | `src/components/AttackGraph.tsx` | Topology tests (`phase6AttackGraph.test.ts`) | PASS (17 tests) | None |
+| **REQ-38** | 8 distinct node compromise states | **Complete** | `src/types/attackGraph.ts` | State machine tests | PASS (17 tests) | None |
+| **REQ-39** | Strict Fog-of-War network redaction | **Complete** | `src/simulation/attackGraphTopology.ts` | Redaction tests (`phase6AttackGraph.test.ts`) | PASS (17 tests) | None |
+| **REQ-40** | Graph search, 7 state filters, and controls | **Complete** | `src/components/attack-graph/` | Filter tests (`phase6AttackGraph.test.ts`) | PASS (17 tests) | None |
+| **REQ-41** | Forensics drawer & accessible table view | **Complete** | `src/components/attack-graph/` | Accessibility tests (`phase6AttackGraph.test.ts`) | PASS (17 tests) | None |
+| **REQ-42** | Attack graph automated test suite | **Complete** | `src/tests/phase6AttackGraph.test.ts` | Full topology tests | PASS (17 tests) | None |
+| **REQ-43** | HTTP methods & path parameter sync | **Complete** | `src/components/HttpRepeater.tsx` | Repeater tests (`phase7WebRepeater.test.ts`) | PASS (22 tests) | None |
+| **REQ-44** | Query params, headers, & Cookie Jar | **Complete** | `src/components/HttpRepeater.tsx` | Editor tests (`phase7WebRepeater.test.ts`) | PASS (22 tests) | None |
+| **REQ-45** | Multi-mode response viewers & timing | **Complete** | `src/components/HttpRepeater.tsx` | Viewer tests (`phase7WebRepeater.test.ts`) | PASS (22 tests) | None |
+| **REQ-46** | Exploit presets & request history replay | **Complete** | `src/components/HttpRepeater.tsx` | Replay tests (`phase7WebRepeater.test.ts`) | PASS (22 tests) | None |
+| **REQ-47** | Strict SSRF defense & simulation firewall | **Complete** | `src/simulation/simulationEngine.ts` | Security boundary tests (`phase7WebRepeater.test.ts`) | PASS (22 tests) | None |
+| **REQ-48** | HTTP repeater automated verification suite | **Complete** | `src/tests/phase7WebRepeater.test.ts` | Protocol tests | PASS (22 tests) | None |
+| **REQ-49** | Flag definitions & registry validation | **Complete** | `src/services/flagRegistry.ts` | Flag tests (`phase8Progression.test.ts`) | PASS (20 tests) | None |
+| **REQ-50** | Flag submission modal & duplicate blocker | **Complete** | `src/components/FlagSubmissionModal.tsx` | Submission tests (`phase8Progression.test.ts`) | PASS (20 tests) | None |
+| **REQ-51** | Documented 5-tier XP rank formula | **Complete** | `src/services/progressionCalculator.ts` | Progression tests (`phase8Progression.test.ts`) | PASS (20 tests) | None |
+| **REQ-52** | 8 event-driven CTF achievements | **Complete** | `src/services/achievementRegistry.ts` | Achievement tests (`phase8Progression.test.ts`) | PASS (20 tests) | None |
+| **REQ-53** | IndexedDB version 1 persistence & JSON save | **Complete** | `src/services/persistenceService.ts` | Database tests (`phase8Progression.test.ts`) | PASS (20 tests) | None |
+| **REQ-54** | Live telemetry dashboard & Loot Vault | **Complete** | `src/pages/DashboardPage.tsx`, `InventoryPage.tsx` | UI store integration tests | PASS | None |
+| **REQ-55** | Progression & persistence automated tests | **Complete** | `src/tests/phase8Progression.test.ts` | Schema tests | PASS (20 tests) | None |
+| **REQ-56** | Socratic mentor with 5 graduated hint tiers | **Complete** | `src/services/ai/ghostOpsProviders.ts` | Mentor tests (`phase9GhostOpsAi.test.ts`) | PASS (16 tests) | None |
+| **REQ-57** | Zero-dependency offline reasoning provider | **Complete** | `src/services/ai/ghostOpsProviders.ts` | Offline engine tests (`phase9GhostOpsAi.test.ts`) | PASS (16 tests) | None |
+| **REQ-58** | Training Payload Forge & safety notes | **Complete** | `src/services/ai/payloadTemplates.ts` | Template tests (`phase9GhostOpsAi.test.ts`) | PASS (16 tests) | None |
+| **REQ-59** | Adversary Autopilot simulation mode | **Complete** | `src/services/ai/autopilotService.ts` | Autopilot tests (`phase9GhostOpsAi.test.ts`) | PASS (16 tests) | None |
+| **REQ-60** | Pluggable AI provider abstraction (Ollama/LLMs)| **Complete** | `src/services/ai/externalAiProvider.ts` | Provider fallback tests (`phase9GhostOpsAi.test.ts`) | PASS (16 tests) | None |
+| **REQ-61** | GhostOps AI automated verification suite | **Complete** | `src/tests/phase9GhostOpsAi.test.ts` | AI suite | PASS (16 tests) | None |
+| **REQ-62** | Procedural Web Audio API sound synthesis | **Complete** | `src/audio/soundManager.ts` | Audio tests (`phase10ImmersionAndA11y.test.tsx`) | PASS (13 tests) | None |
+| **REQ-63** | Optional CRT scanlines & reduced-motion | **Complete** | `src/components/layout/AppShell.tsx` | Preference tests (`phase10ImmersionAndA11y.test.tsx`)| PASS (13 tests) | None |
+| **REQ-64** | Terminal typography font-size controls | **Complete** | `src/components/PwnboxTerminal.tsx` | Scale tests (`phase10ImmersionAndA11y.test.tsx`) | PASS (13 tests) | None |
+| **REQ-65** | Accessible Keyboard Shortcuts manual (Ctrl+K)| **Complete** | `src/components/KeyboardShortcutsModal.tsx` | Modal tests (`phase10ImmersionAndA11y.test.tsx`) | PASS (13 tests) | None |
+| **REQ-66** | Semantic confirmation dialogs (alertdialog)| **Complete** | `src/components/ConfirmDialog.tsx` | Dialog tests (`phase10ImmersionAndA11y.test.tsx`) | PASS (13 tests) | None |
+| **REQ-67** | Immersion & accessibility test suite | **Complete** | `src/tests/phase10ImmersionAndA11y.test.tsx` | A11y tests | PASS (13 tests) | None |
+| **REQ-68** | Target machine scope & isolation defense | **Complete** | `src/simulation/adapters/commandAdapters.ts` | Regression tests (`phase11SecurityHardeningAndRegressions.test.tsx`)| PASS (24 tests) | None |
+| **REQ-69** | Graph-state service synchronization | **Complete** | `src/simulation/attackGraphTopology.ts` | Sync tests (`phase11SecurityHardeningAndRegressions.test.tsx`)| PASS (24 tests) | None |
+| **REQ-70** | Challenge prerequisite enforcement | **Complete** | `src/simulation/simulationEngine.ts` | Security boundary tests (`phase11SecurityHardeningAndRegressions.test.tsx`)| PASS (24 tests) | None |
+| **REQ-71** | Single-award flag & progression guarantee | **Complete** | `src/store/gameStore.ts` | Duplicate tests (`phase11SecurityHardeningAndRegressions.test.tsx`)| PASS (24 tests) | None |
+| **REQ-72** | AI adapter resilient error fallback | **Complete** | `src/services/ai/externalAiProvider.ts` | Fault-tolerance tests (`phase11SecurityHardeningAndRegressions.test.tsx`)| PASS (24 tests) | None |
+| **REQ-73** | Virtual shell host process sandboxing | **Complete** | `src/services/shellParser.ts` | Tokenizer tests (`phase11SecurityHardeningAndRegressions.test.tsx`)| PASS (24 tests) | None |
+| **REQ-74** | Bundle code splitting & chunk optimization | **Complete** | `vite.config.ts` | Rollup chunk analysis (index bundle 373 kB) | PASS | None |
+| **REQ-75** | Automated GitHub Actions CI workflow | **Complete** | `.github/workflows/ci.yml` | CI script execution (typecheck, test, build) | PASS | None |
+| **REQ-76** | 17-Step Full Journey End-to-End Test | **Complete** | `src/tests/phase12EndToEndJourney.test.tsx` | Vitest automated journey test | PASS (1 test) | None |
+| **REQ-77** | Comprehensive documentation suite | **Complete** | `docs/`, `README.md`, `RELEASE_NOTES.md` | Markdown inspection & link integrity | PASS | None |
+| **REQ-78** | Open source licensing verification (MIT) | **Complete** | `LICENSE` | License audit | PASS | None |

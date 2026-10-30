@@ -1,28 +1,22 @@
-import React, { useState } from 'react';
-import { Volume2, VolumeX, Flag, Trophy, Shield, Activity, Monitor } from 'lucide-react';
+import React from 'react';
+import { Volume2, VolumeX, Flag, Trophy, Shield, Activity, Monitor, Keyboard } from 'lucide-react';
 import { useGameStore } from '../../store/gameStore';
+import { usePreferencesStore } from '../../store/preferencesStore';
 import { soundManager } from '../../audio/soundManager';
 
 interface TopStatusBarProps {
   onOpenFlagModal: () => void;
-  crtActive: boolean;
-  onToggleCrt: () => void;
+  onOpenShortcutsModal: () => void;
 }
 
 export const TopStatusBar: React.FC<TopStatusBarProps> = ({
   onOpenFlagModal,
-  crtActive,
-  onToggleCrt,
+  onOpenShortcutsModal,
 }) => {
   const { score, rank, activeMachineId, setActiveMachine, machines } = useGameStore();
-  const [isMuted, setIsMuted] = useState<boolean>(soundManager.getMuted());
+  const { isMuted, toggleMute, crtActive, setCrtActive } = usePreferencesStore();
 
   const activeMachine = machines.find((m) => m.id === activeMachineId) || machines[0];
-
-  const handleToggleMute = () => {
-    const muted = soundManager.toggleMute();
-    setIsMuted(muted);
-  };
 
   return (
     <header className="flex items-center justify-between px-4 py-2 bg-[#0d121c] border-b border-slate-800/80 font-mono text-xs select-none z-20">
@@ -35,14 +29,18 @@ export const TopStatusBar: React.FC<TopStatusBarProps> = ({
         </div>
 
         <div className="flex items-center space-x-2 pl-3 border-l border-slate-800">
-          <span className="text-[10px] text-slate-500 font-bold hidden sm:inline">TARGET BOX:</span>
+          <label htmlFor="target-box-select" className="text-[10px] text-slate-500 font-bold hidden sm:inline">
+            TARGET BOX:
+          </label>
           <select
+            id="target-box-select"
             value={activeMachineId}
             onChange={(e) => {
               soundManager.playKey();
               setActiveMachine(e.target.value);
             }}
-            className="bg-slate-900 border border-slate-800 text-xs font-bold text-slate-100 rounded px-2.5 py-1 outline-none focus:border-emerald-500 cursor-pointer"
+            className="bg-slate-900 border border-slate-800 text-xs font-bold text-slate-100 rounded px-2.5 py-1 outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+            aria-label="Select active target machine"
           >
             {machines.map((m) => (
               <option key={m.id} value={m.id}>
@@ -57,20 +55,35 @@ export const TopStatusBar: React.FC<TopStatusBarProps> = ({
         </span>
       </div>
 
-      {/* Right Controls: Score, Flags, Sound, CRT, Submit */}
+      {/* Right Controls: Score, Flags, Sound, CRT, Shortcuts, Submit */}
       <div className="flex items-center space-x-2.5">
+        {/* Keyboard Shortcuts Trigger */}
+        <button
+          onClick={() => {
+            soundManager.playKey();
+            onOpenShortcutsModal();
+          }}
+          className="p-1.5 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          title="Keyboard Shortcuts (Ctrl+K)"
+          aria-label="Keyboard Shortcuts"
+        >
+          <Keyboard className="w-3.5 h-3.5" />
+        </button>
+
         {/* CRT Scanline Toggle */}
         <button
           onClick={() => {
             soundManager.playKey();
-            onToggleCrt();
+            setCrtActive(!crtActive);
           }}
-          className={`p-1.5 rounded border text-xs transition flex items-center gap-1 ${
+          className={`p-1.5 rounded border text-xs transition flex items-center gap-1 focus:outline-none focus:ring-1 focus:ring-emerald-500 ${
             crtActive
               ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-300'
               : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
           }`}
           title="Toggle CRT Retro Scanline Shader"
+          aria-pressed={crtActive}
+          aria-label="Toggle CRT Scanline Effect"
         >
           <Monitor className="w-3.5 h-3.5" />
           <span className="text-[9px] hidden lg:inline">CRT FX</span>
@@ -78,9 +91,13 @@ export const TopStatusBar: React.FC<TopStatusBarProps> = ({
 
         {/* Audio Toggle */}
         <button
-          onClick={handleToggleMute}
-          className="p-1.5 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition"
+          onClick={() => {
+            toggleMute();
+          }}
+          className="p-1.5 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition focus:outline-none focus:ring-1 focus:ring-emerald-500"
           title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
+          aria-pressed={isMuted}
+          aria-label={isMuted ? 'Unmute Audio' : 'Mute Audio'}
         >
           {isMuted ? (
             <VolumeX className="w-3.5 h-3.5 text-red-400" />
@@ -108,7 +125,7 @@ export const TopStatusBar: React.FC<TopStatusBarProps> = ({
             soundManager.playKey();
             onOpenFlagModal();
           }}
-          className="flex items-center space-x-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-black font-bold rounded text-xs transition shadow-lg shadow-emerald-950/40"
+          className="flex items-center space-x-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-black font-bold rounded text-xs transition shadow-lg shadow-emerald-950/40 focus:outline-none focus:ring-2 focus:ring-emerald-400"
         >
           <Flag className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">SUBMIT FLAG</span>

@@ -148,6 +148,60 @@
 - [x] Zero credential exposure: API keys are maintained in session memory and never committed or baked into production bundles.
 - [x] Complete automated test suite (`src/tests/phase9GhostOpsAi.test.ts`) covering all 5 hint levels, parameter rendering, autopilot execution, network isolation, and provider failure handling (16 tests, 181 total passing tests).
 
+## Phase 10: Immersion, Accessibility, and UI Polish
+- [x] Optional procedural audio using Web Audio API with master GainNode volume slider and mute controls (`soundManager.ts`).
+- [x] Strict audio safety: no autoplay before user interaction, clamped volume levels (0.0 to 1.0), and lazy audio context initialization.
+- [x] Optional CRT scanlines and subtle retro terminal shaders with toggle buttons in TopStatusBar and Settings (`AppShell.tsx`, `TopStatusBar.tsx`).
+- [x] Reduced-motion support honoring both OS-level `prefers-reduced-motion` and user settings toggle via root `motion-reduce` class.
+- [x] Terminal font-size controls (`sm`, `base`, `lg`) with Zoom In, Zoom Out, and indicator pills in `PwnboxTerminal.tsx` and Settings.
+- [x] Keyboard shortcut documentation modal (`KeyboardShortcutsModal.tsx`) with `<kbd>` key combination badges and global `Ctrl+K` / `Cmd+K` / `Esc` handling.
+- [x] Consistent, accessible confirmation dialogs (`ConfirmDialog.tsx`) replacing native `window.confirm` with full ARIA `alertdialog` roles, keyboard navigation, and destructive style options.
+- [x] Visible focus rings (`focus:ring-1 focus:ring-emerald-500`) and keyboard accessibility across sidebar, navigation links, and action buttons.
+- [x] Non-color status cues across machine compromise levels and CTF flags (distinct text labels and icons rather than solely relying on color).
+- [x] Comprehensive automated test suite (`src/tests/phase10ImmersionAndA11y.test.tsx`) covering preferences store, Web Audio safety, ConfirmDialog, KeyboardShortcutsModal, and TopStatusBar accessibility (13 tests, 194 total passing tests).
+
+## Phase 11: Security Hardening, Testing, Performance, and Regression Fixes
+- [x] Verified Command Machine Scope Isolation: commands targeting a specific host affect that machine exclusively without cross-target side effects.
+- [x] Graph-State Service Synchronization: discovered ports and services derive strictly onto the target node in React Flow topology.
+- [x] Challenge Prerequisite Enforcement: verified objective prerequisites cannot be bypassed via direct tool calls or out-of-order execution.
+- [x] Virtual Filesystem Permissions: POSIX permission check strictly enforces read/write isolation between `kali`, `www-data`, and `root`.
+- [x] Single-Award Flag Guarantee: duplicate CTF flag submissions award 0 duplicate XP and preserve score integrity.
+- [x] State Restoration & Hydration: verified IndexedDB and localStorage serialization and hydration restore valid scores, flags, and compromise levels.
+- [x] Corrupted & Malicious Save Rejection: deep schema validation rejects negative scores, unsupported versions, and malformed structures without crashing.
+- [x] AI Adapter Resilient Fallback: network drops, timeouts, and API errors are caught gracefully without interrupting gameplay or crashing components.
+- [x] HTTP Repeater Security Boundary: strictly enforces simulation firewall preventing SSRF to localhost, private cloud metadata, and external networks.
+- [x] Challenge & Range Reset Consistency: reset restores machines, ports, routes, and flags to clean baseline and updates attack graph nodes.
+- [x] Host Sandboxing: shell tokenizer executes entirely within pure virtual TypeScript memory without invoking `eval()`, `new Function()`, or host processes.
+- [x] Zero Leaked Credentials Audit: confirmed zero hardcoded API keys, private keys, or high-entropy tokens are committed.
+- [x] Performance Optimization: configured Vite manual chunking (`vendor-react`, `vendor-graph`, `vendor-icons`), eliminating bundle size warnings and cutting initial bundle in half.
+- [x] React Router Navigation Fix: converted `window.location.hash` in Attack Graph details drawer to `navigate('/machines/' + machineId)`.
+- [x] Automated CI Pipeline: configured `.github/workflows/ci.yml` running Node 20 dependency install (`npm ci`), type check (`tsc --noEmit`), unit & integration tests (`vitest run`), and production build.
+- [x] Exhaustive Automated Test Suite (`src/tests/phase11SecurityHardeningAndRegressions.test.tsx`) covering all 12 regression scenarios (24 tests, 218 total passing tests across 18 test suites).
+
+## Phase 12: Final Integration, Documentation, and Release Readiness
+- [x] Created `docs/INSTALLATION.md` detailing system requirements, quickstart commands, and static hosting deployment.
+- [x] Created `docs/DEVELOPMENT.md` detailing project structure, conventions, and developer commands.
+- [x] Finalized `ARCHITECTURE.md` with multi-tier architecture diagrams, component interactions, and data flow specifications.
+- [x] Created `docs/SIMULATION_ENGINE.md` describing virtual routing, service discovery, objective validation, and event bus mechanics.
+- [x] Created `docs/CHALLENGE_AUTHORING.md` with complete walkthrough for contributing new vulnerable targets.
+- [x] Created `docs/SECURITY_MODEL.md` documenting threat model, sandbox boundaries, and SSRF defenses.
+- [x] Created `docs/AI_PROVIDERS.md` detailing GhostOps AI provider setup (Offline, Ollama, OpenAI, Claude, Gemini).
+- [x] Created `docs/TESTING.md` cataloging all 19 test suites, coverage scope, and verification procedures.
+- [x] Created `docs/TROUBLESHOOTING.md` providing solutions for common audio, command, pivoting, and persistence issues.
+- [x] Created `CONTRIBUTING.md` outlining community guidelines and pull request workflows.
+- [x] Created `docs/ENV_VARS.md` detailing all runtime and build environment variables.
+- [x] Created `RELEASE_NOTES.md` documenting the official v1.0.0 General Availability release.
+- [x] Overhauled `README.md` with comprehensive feature breakdown, HTB comparison table, and documentation links.
+- [x] Updated `REQUIREMENTS_CHECKLIST.md` to formal 6-column format (Requirement, Implementation Status, Relevant File, Verification Method, Actual Test Result, Outstanding Issue) with all 78 requirements marked Complete.
+- [x] Confirmed open-source licensing under MIT in `LICENSE`.
+- [x] Automated 17-step full user journey verification test suite (`src/tests/phase12EndToEndJourney.test.tsx`).
+- [x] Full test pass: 19 test suites, 219 tests passing, 0 failures.
+- [x] Clean TypeScript check (`tsc --noEmit`) with 0 errors.
+- [x] Optimized production build (`npm run build`) with zero chunk warnings.
+
+
+
+
 
 
 

@@ -84,7 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
               to={item.to}
               onClick={() => soundManager.playKey()}
               className={({ isActive }) =>
-                `flex items-center px-3 py-2 rounded-lg text-xs font-semibold transition-all group ${
+                `flex items-center px-3 py-2 rounded-lg text-xs font-semibold transition-all group focus:outline-none focus:ring-1 focus:ring-emerald-500 ${
                   isActive
                     ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent'

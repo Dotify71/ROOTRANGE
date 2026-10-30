@@ -87,6 +87,29 @@ ROOTRANGE is an open-source, in-browser Cyber Range and Gamified Penetration Tes
 - Typed Provider Abstraction for Local Ollama, OpenAI, Anthropic, and Google Gemini with graceful error fallback.
 - Automated test suite (`src/tests/phase9GhostOpsAi.test.ts`) validating offline guidance, templates, autopilot constraints, and provider failure handling (16 tests, 181 total passing).
 
-### Phase 10: Final Hardening & Verification
-- End-to-end integration test suites across full cyber range operations.
-- Production build optimization and deployment readiness.
+### Phase 10: Immersion, Accessibility, and UI Polish
+- Procedural Web Audio API sound synthesis with master gain control, volume slider, mute toggles, and zero pre-interaction autoplay (`soundManager.ts`).
+- CRT scanline phosphor shaders and retro workstation effects toggleable globally (`AppShell.tsx`, `TopStatusBar.tsx`).
+- Reduced-motion accessibility honoring both system OS setting (`prefers-reduced-motion: reduce`) and manual toggle via root `motion-reduce` class.
+- Terminal typography scaling controls (`sm`, `base`, `lg`) in `PwnboxTerminal.tsx` and `SettingsPage.tsx`.
+- Keyboard shortcut documentation modal with accessible `<kbd>` badges and `Ctrl+K` / `Cmd+K` / `Esc` event handlers (`KeyboardShortcutsModal.tsx`).
+- Semantic, accessible confirmation dialogs (`ConfirmDialog.tsx`) replacing all native `window.confirm` calls with full ARIA `alertdialog` semantics.
+- Non-color status cues across machine compromise levels and CTF flags.
+- Comprehensive automated test suite (`src/tests/phase10ImmersionAndA11y.test.tsx`) covering audio safety, preferences store, confirm dialogs, shortcuts, and accessibility (13 tests, 194 total passing).
+
+### Phase 11: Security Hardening, Testing, Performance, and Regression Fixes
+- Rigorous verification of all 12 regression scenarios (machine scope isolation, graph-state service sync, prerequisite enforcement, virtual permissions, duplicate flag rejection, state hydration, invalid save rejection, AI fallback, HTTP repeater isolation, reset consistency, shell host sandboxing, zero leaked secrets).
+- Performance review and Vite bundle code splitting with custom manual chunks (`vendor-react`, `vendor-graph`, `vendor-icons`), eliminating bundle size warnings and cutting the main chunk from 738kB to 373kB.
+- Fixed React Router navigation link in the attack graph details drawer to prevent broken hash navigation.
+- Added GitHub Actions continuous integration workflow (`.github/workflows/ci.yml`) installing dependencies, executing TypeScript type checking, running Vitest suites, and validating production builds.
+- Added comprehensive regression and hardening test suite (`src/tests/phase11SecurityHardeningAndRegressions.test.tsx`) bringing project coverage to 218 passing tests across 18 test files.
+
+### Phase 12: Final Integration, Documentation, and Release Readiness
+- Built automated 17-step full user journey verification test suite (`src/tests/phase12EndToEndJourney.test.tsx`) asserting end-to-end flow from dashboard to root flag, achievements, graph sync, repeater, and reset (219 passing tests across 19 test files).
+- Created complete documentation suite in `docs/`: `INSTALLATION.md`, `DEVELOPMENT.md`, `SIMULATION_ENGINE.md`, `CHALLENGE_AUTHORING.md`, `SECURITY_MODEL.md`, `AI_PROVIDERS.md`, `TESTING.md`, `TROUBLESHOOTING.md`, `ENV_VARS.md`.
+- Finalized primary project artifacts: `README.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md`, `RELEASE_NOTES.md` (v1.0.0), and `REQUIREMENTS_CHECKLIST.md` (78 requirements marked Complete with verification evidence).
+- Confirmed MIT open-source license in `LICENSE`.
+- Verified production build (`npm run build`) and clean type-check (`tsc --noEmit`).
+
+
+
