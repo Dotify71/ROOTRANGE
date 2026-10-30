@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { DashboardPage } from './pages/DashboardPage';
@@ -12,8 +12,13 @@ import { InventoryPage } from './pages/InventoryPage';
 import { AchievementsPage } from './pages/AchievementsPage';
 import { DocumentationPage } from './pages/DocumentationPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { useGameStore } from './store/gameStore';
 
 export const App: React.FC = () => {
+  useEffect(() => {
+    useGameStore.getState().hydrateFromPersistence();
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>

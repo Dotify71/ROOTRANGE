@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import 'fake-indexeddb/auto';
 
 // Mock ResizeObserver for jsdom environment (required by React Flow)
 if (typeof window !== 'undefined') {

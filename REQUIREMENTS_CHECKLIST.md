@@ -50,5 +50,13 @@
 | **REQ-46** | Exploit Presets & History Replay | **Verified** | 7 pre-configured offensive payloads (Log4Shell, SQLi, JWT alg: none, ADCS) in `repeaterPresets.ts` and request history replay drawer in `RequestHistoryDrawer.tsx`. |
 | **REQ-47** | Strict Security Boundary & SSRF Defense | **Verified** | Rejects localhost/loopback, cloud metadata (169.254.x.x), and external internet domains with 403 Security Boundary Violation. |
 | **REQ-48** | Repeater Unit & Integration Tests | **Verified** | `src/tests/phase7WebRepeater.test.ts` validates all methods, params, injection vectors, cookies, route discovery, and security boundaries (22 tests, 145 total passing). |
+| **REQ-49** | Multi-Tier Flag Verification & Registry | **Verified** | Cataloged User, Root, Special Challenge, and Final Range Master flags with machine context verification in `flagRegistry.ts`. |
+| **REQ-50** | Interactive Flag Submission & Feedback | **Verified** | `FlagSubmissionModal.tsx` provides target machine context filter, immediate visual status, and duplicate submission prevention. |
+| **REQ-51** | Configurable 5-Tier XP Rank Progression | **Verified** | `progressionCalculator.ts` implements Script Kiddie (0), Hacker (20), Pro Hacker (55), Elite (105), and Omni God (155) with progress tracking. |
+| **REQ-52** | Event & State-Driven Achievements | **Verified** | 8 achievements in `achievementRegistry.ts` triggered by actual simulation events and state transitions without duplicate awards. |
+| **REQ-53** | IndexedDB & Versioned Save State | **Verified** | `persistenceService.ts` implements version 1 schema validation, localStorage fallback, and deep corrupted-payload rejection. |
+| **REQ-54** | Live Dashboard Metrics & Unified Loot Vault | **Verified** | `DashboardPage.tsx` derives all metrics from progression store; `InventoryPage.tsx` unifies flags, evidence, and hashes with search. |
+| **REQ-55** | Progression Automated Verification | **Verified** | `src/tests/phase8Progression.test.ts` covers flag claims, duplicate blocks, ranks, achievements, persistence, and resets (20 tests, 165 total passing). |
+
 
 

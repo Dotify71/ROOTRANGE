@@ -110,4 +110,30 @@
 - [x] Integration with simulation engine: triggers service/port discovery, route enumeration, vulnerability discovery, and evidence creation (`addEvidence`).
 - [x] Complete automated test suite (`src/tests/phase7WebRepeater.test.ts`) covering methods, query params, headers, cookies, route discovery, security boundaries, and AD endpoints (22 tests, 145 total passing tests).
 
+## Phase 8: CTF Progression, XP, Ranks, Flags, and Achievements
+- [x] User, Root, Special Challenge, and Final Range Master flags defined and cataloged in `flagRegistry.ts`.
+- [x] Enhanced flag submission UI (`FlagSubmissionModal.tsx`) with target machine context selector, instant visual status, and duplicate submission prevention.
+- [x] Documented, configurable 5-tier rank formula in `progressionCalculator.ts`:
+  1. Script Kiddie (0 - 19 XP)
+  2. Hacker (20 - 54 XP)
+  3. Pro Hacker (55 - 104 XP)
+  4. Elite (105 - 154 XP)
+  5. Omni God (155+ XP)
+- [x] 8 explicit event- and state-driven achievements implemented in `achievementRegistry.ts`:
+  - First Blood (First User flag claimed)
+  - Recon Specialist (8+ ports enumerated across the range)
+  - Web Hunter (5+ web routes discovered)
+  - Privilege Escalation (Root flag claimed or UID 0 compromise)
+  - Domain Explorer (Corp-DC01 Active Directory Kerberos/SMB enumerated)
+  - Ghost in the Shell (Log4Shell JNDI or SQLi vulnerability identified)
+  - Full Compromise (User + Root claimed on >= 2 target machines)
+  - Range Master (100% full compromise across all 3 target machines)
+- [x] Single-award reward guarantee preventing double XP rewards on replayed events.
+- [x] Progress persistence using IndexedDB with versioned schema (`version: 1`) and localStorage fallback in `persistenceService.ts`.
+- [x] Portable Save Export and Import with deep schema validation, negative score rejection, and migration failure handling.
+- [x] Overhauled Dashboard (`DashboardPage.tsx`) deriving all metrics, progress bars, and recent activity from live store and progression calculator.
+- [x] Unified Loot Vault (`InventoryPage.tsx`) merging captured CTF flags, credentials, JWTs, and evidence items with search and category filtering.
+- [x] Complete automated test suite (`src/tests/phase8Progression.test.ts`) covering flags, ranks, achievements, persistence, and resets (20 tests, 165 total passing tests).
+
+
 

@@ -68,11 +68,17 @@ ROOTRANGE is an open-source, in-browser Cyber Range and Gamified Penetration Tes
 - Strict in-browser security boundary preventing loopback/localhost, cloud metadata (169.254.x.x), and external internet access.
 - Fully automated test suite (`src/tests/phase7WebRepeater.test.ts`) validating methods, parameters, cookies, headers, exploit triggers, route discovery, and security boundaries (22 tests, 145 total passing).
 
-### Phase 8: GhostOps AI Offensive Copilot
-- Socratic Mentor providing progressive hints without spoiling flags.
-- Payload Forge generating pre-configured reverse shells and privesc commands.
-- Autopilot Red Team kill chain walkthrough.
+### Phase 8: CTF Progression, XP, Ranks, Flags, and Achievements
+- Multi-tier flag validation system supporting User, Root, Special Challenge, and Final Range Master flags (`flagRegistry.ts`).
+- Interactive flag submission modal with target machine auto-detection, immediate validation feedback, and duplicate prevention (`FlagSubmissionModal.tsx`).
+- Documented, configurable 5-tier rank progression formula (Script Kiddie -> Hacker -> Pro Hacker -> Elite -> Omni God) in `progressionCalculator.ts`.
+- 8 state- and event-driven achievements with explicit simulation triggers and duplicate award prevention in `achievementRegistry.ts`.
+- IndexedDB progress persistence with versioned schema (`version: 1`) and resilient localStorage fallback in `persistenceService.ts`.
+- Portable Save State Export and Import with JSON schema validation and corrupted payload rejection.
+- Fully dynamic Dashboard deriving all XP metrics, rank progression bars, rooted machine counts, and recent activity timeline from live store state (`DashboardPage.tsx`).
+- Unified Loot Vault combining captured flags, credentials, JWTs, and evidence items with full text search and category tabs (`InventoryPage.tsx`).
+- Comprehensive automated test suite (`src/tests/phase8Progression.test.ts`) covering all progression rules, achievements, and persistence operations (20 tests, 165 total passing).
 
 ### Phase 9: Final Hardening & Verification
-- End-to-end integration test suites.
+- End-to-end integration test suites across full cyber range operations.
 - Production build optimization and deployment readiness.

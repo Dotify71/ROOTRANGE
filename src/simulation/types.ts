@@ -11,7 +11,8 @@ export type SimulationEventType =
   | 'MACHINE_COMPROMISED'
   | 'NETWORK_ROUTE_DISCOVERED'
   | 'FLAG_CAPTURED'
-  | 'CHALLENGE_COMPLETED';
+  | 'CHALLENGE_COMPLETED'
+  | 'ACHIEVEMENT_UNLOCKED';
 
 export interface SimulationEvent<T = Record<string, unknown>> {
   id: string;

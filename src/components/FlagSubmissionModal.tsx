@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import confetti from 'canvas-confetti';
-import { Flag, X, CheckCircle2, AlertCircle, Trophy, Sparkles } from 'lucide-react';
+import { Flag, X, CheckCircle2, AlertCircle, Trophy, Sparkles, Filter } from 'lucide-react';
 import { useGameStore } from '../store/gameStore';
 import { soundManager } from '../audio/soundManager';
 import { FlagSubmissionResult } from '../types';
@@ -8,11 +8,17 @@ import { FlagSubmissionResult } from '../types';
 interface FlagSubmissionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultMachineId?: string;
 }
 
-export const FlagSubmissionModal: React.FC<FlagSubmissionModalProps> = ({ isOpen, onClose }) => {
-  const { submitFlag } = useGameStore();
+export const FlagSubmissionModal: React.FC<FlagSubmissionModalProps> = ({
+  isOpen,
+  onClose,
+  defaultMachineId,
+}) => {
+  const { submitFlag, machines, claimedFlags } = useGameStore();
   const [flagInput, setFlagInput] = useState<string>('');
+  const [selectedMachine, setSelectedMachine] = useState<string>(defaultMachineId || 'auto');
   const [result, setResult] = useState<FlagSubmissionResult | null>(null);
 
   if (!isOpen) return null;
@@ -21,15 +27,16 @@ export const FlagSubmissionModal: React.FC<FlagSubmissionModalProps> = ({ isOpen
     e.preventDefault();
     soundManager.playKey();
 
-    const res = submitFlag(flagInput);
+    const expectedMachineId = selectedMachine !== 'auto' ? selectedMachine : undefined;
+    const res = submitFlag(flagInput, expectedMachineId);
     setResult(res);
 
     if (res.success) {
       soundManager.playFlagSuccess();
       try {
         confetti({
-          particleCount: 100,
-          spread: 70,
+          particleCount: 120,
+          spread: 80,
           origin: { y: 0.6 },
           colors: ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b'],
         });
@@ -37,6 +44,8 @@ export const FlagSubmissionModal: React.FC<FlagSubmissionModalProps> = ({ isOpen
         // Confetti fails gracefully
       }
       setFlagInput('');
+    } else {
+      soundManager.playKey();
     }
   };
 
@@ -58,19 +67,43 @@ export const FlagSubmissionModal: React.FC<FlagSubmissionModalProps> = ({ isOpen
         </div>
 
         <p className="text-slate-400 leading-relaxed text-xs">
-          Discovered a flag inside a target container? Enter the full token (e.g. <code className="text-emerald-400">ROOTRANGE{'{...}'}</code>) to claim points and rank up.
+          Discovered a flag inside a target container or service? Enter the full token (e.g. <code className="text-emerald-400">ROOTRANGE{'{...}'}</code>) to claim points and advance your hacker rank.
         </p>
 
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            type="text"
-            value={flagInput}
-            onChange={(e) => setFlagInput(e.target.value)}
-            placeholder="ROOTRANGE{user_or_root_token}"
-            className="w-full bg-[#070a0f] border border-slate-800 focus:border-emerald-500 text-slate-100 p-2.5 rounded font-mono text-xs outline-none"
-            autoFocus
-          />
+          <div>
+            <label className="text-[10px] text-slate-400 font-bold block mb-1 flex items-center gap-1">
+              <Filter className="w-3 h-3 text-cyan-400" />
+              <span>TARGET MACHINE CONTEXT</span>
+            </label>
+            <select
+              value={selectedMachine}
+              onChange={(e) => setSelectedMachine(e.target.value)}
+              className="w-full bg-[#070a0f] border border-slate-800 text-slate-300 p-2 rounded text-xs outline-none focus:border-cyan-500"
+            >
+              <option value="auto">Auto-Detect Target Machine</option>
+              {machines.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} ({m.ip})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[10px] text-slate-400 font-bold block mb-1">
+              FLAG TOKEN
+            </label>
+            <input
+              type="text"
+              value={flagInput}
+              onChange={(e) => setFlagInput(e.target.value)}
+              placeholder="ROOTRANGE{user_or_root_token}"
+              className="w-full bg-[#070a0f] border border-slate-800 focus:border-emerald-500 text-slate-100 p-2.5 rounded font-mono text-xs outline-none"
+              autoFocus
+            />
+          </div>
 
           <button
             type="submit"
@@ -98,14 +131,21 @@ export const FlagSubmissionModal: React.FC<FlagSubmissionModalProps> = ({ isOpen
             <div>
               <div className="font-bold text-xs">{result.message}</div>
               {result.success && (
-                <div className="text-[10px] text-emerald-400/80 mt-0.5 flex items-center gap-1">
+                <div className="text-[10px] text-emerald-400/80 mt-1 flex items-center gap-1">
                   <Sparkles className="w-3 h-3" />
-                  <span>Rank & attack graph updated automatically!</span>
+                  <span>
+                    Flag registered! Machine: {result.machineName || 'ROOTRANGE'}, Type: {result.flagType?.toUpperCase() || 'FLAG'}, +{result.pointsAwarded} PTS
+                  </span>
                 </div>
               )}
             </div>
           </div>
         )}
+
+        <div className="text-[10px] text-slate-500 border-t border-slate-800/80 pt-2 flex justify-between">
+          <span>Total Captured: <strong className="text-emerald-400">{claimedFlags.length} flags</strong></span>
+          <span>Rank progression active</span>
+        </div>
       </div>
     </div>
   );

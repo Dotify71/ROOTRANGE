@@ -52,7 +52,7 @@ export interface FlagSubmissionResult {
   success: boolean;
   message: string;
   pointsAwarded: number;
-  flagType?: 'user' | 'root';
+  flagType?: 'user' | 'root' | 'challenge' | 'final';
   machineName?: string;
 }
 
