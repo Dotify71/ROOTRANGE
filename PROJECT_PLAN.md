@@ -97,3 +97,11 @@ ROOTRANGE is an open-source, in-browser Cyber Range and Gamified Penetration Tes
 - Non-color status cues across machine compromise levels and CTF flags.
 - Comprehensive automated test suite (`src/tests/phase10ImmersionAndA11y.test.tsx`) covering audio safety, preferences store, confirm dialogs, shortcuts, and accessibility (13 tests, 194 total passing).
 
+### Phase 11: Security Hardening, Testing, Performance, and Regression Fixes
+- Rigorous verification of all 12 regression scenarios (machine scope isolation, graph-state service sync, prerequisite enforcement, virtual permissions, duplicate flag rejection, state hydration, invalid save rejection, AI fallback, HTTP repeater isolation, reset consistency, shell host sandboxing, zero leaked secrets).
+- Performance review and Vite bundle code splitting with custom manual chunks (`vendor-react`, `vendor-graph`, `vendor-icons`), eliminating bundle size warnings and cutting the main chunk from 738kB to 373kB.
+- Fixed React Router navigation link in the attack graph details drawer to prevent broken hash navigation.
+- Added GitHub Actions continuous integration workflow (`.github/workflows/ci.yml`) installing dependencies, executing TypeScript type checking, running Vitest suites, and validating production builds.
+- Added comprehensive regression and hardening test suite (`src/tests/phase11SecurityHardeningAndRegressions.test.tsx`) bringing project coverage to 218 passing tests across 18 test files.
+
+

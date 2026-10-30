@@ -160,6 +160,25 @@
 - [x] Non-color status cues across machine compromise levels and CTF flags (distinct text labels and icons rather than solely relying on color).
 - [x] Comprehensive automated test suite (`src/tests/phase10ImmersionAndA11y.test.tsx`) covering preferences store, Web Audio safety, ConfirmDialog, KeyboardShortcutsModal, and TopStatusBar accessibility (13 tests, 194 total passing tests).
 
+## Phase 11: Security Hardening, Testing, Performance, and Regression Fixes
+- [x] Verified Command Machine Scope Isolation: commands targeting a specific host affect that machine exclusively without cross-target side effects.
+- [x] Graph-State Service Synchronization: discovered ports and services derive strictly onto the target node in React Flow topology.
+- [x] Challenge Prerequisite Enforcement: verified objective prerequisites cannot be bypassed via direct tool calls or out-of-order execution.
+- [x] Virtual Filesystem Permissions: POSIX permission check strictly enforces read/write isolation between `kali`, `www-data`, and `root`.
+- [x] Single-Award Flag Guarantee: duplicate CTF flag submissions award 0 duplicate XP and preserve score integrity.
+- [x] State Restoration & Hydration: verified IndexedDB and localStorage serialization and hydration restore valid scores, flags, and compromise levels.
+- [x] Corrupted & Malicious Save Rejection: deep schema validation rejects negative scores, unsupported versions, and malformed structures without crashing.
+- [x] AI Adapter Resilient Fallback: network drops, timeouts, and API errors are caught gracefully without interrupting gameplay or crashing components.
+- [x] HTTP Repeater Security Boundary: strictly enforces simulation firewall preventing SSRF to localhost, private cloud metadata, and external networks.
+- [x] Challenge & Range Reset Consistency: reset restores machines, ports, routes, and flags to clean baseline and updates attack graph nodes.
+- [x] Host Sandboxing: shell tokenizer executes entirely within pure virtual TypeScript memory without invoking `eval()`, `new Function()`, or host processes.
+- [x] Zero Leaked Credentials Audit: confirmed zero hardcoded API keys, private keys, or high-entropy tokens are committed.
+- [x] Performance Optimization: configured Vite manual chunking (`vendor-react`, `vendor-graph`, `vendor-icons`), eliminating bundle size warnings and cutting initial bundle in half.
+- [x] React Router Navigation Fix: converted `window.location.hash` in Attack Graph details drawer to `navigate('/machines/' + machineId)`.
+- [x] Automated CI Pipeline: configured `.github/workflows/ci.yml` running Node 20 dependency install (`npm ci`), type check (`tsc --noEmit`), unit & integration tests (`vitest run`), and production build.
+- [x] Exhaustive Automated Test Suite (`src/tests/phase11SecurityHardeningAndRegressions.test.tsx`) covering all 12 regression scenarios (24 tests, 218 total passing tests across 18 test suites).
+
+
 
 
 

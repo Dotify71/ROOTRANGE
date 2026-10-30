@@ -69,6 +69,15 @@
 | **REQ-65** | Accessible Keyboard Shortcuts Documentation | **Verified** | `KeyboardShortcutsModal.tsx` provides full shortcut manual bound to `Ctrl+K` / `Cmd+K` / `Esc` with accessible `<kbd>` components. |
 | **REQ-66** | Accessible Confirmation Dialogs | **Verified** | `ConfirmDialog.tsx` replaces all native browser alert/confirm popups with ARIA `alertdialog`, visible focus management, and destructive variants. |
 | **REQ-67** | Phase 10 Immersion & Accessibility Verification | **Verified** | `src/tests/phase10ImmersionAndA11y.test.tsx` validates preferences store, Web Audio, ConfirmDialog, shortcuts modal, and status bar accessibility (13 tests, 194 total passing). |
+| **REQ-68** | Machine Scope & Isolation Enforcement | **Verified** | Verified commands and port discoveries affect the targeted host exclusively; resets preserve other target machine states. |
+| **REQ-69** | Graph State & Service Synchronization | **Verified** | Discovered services and compromise states derive strictly onto their respective nodes in `buildAttackGraphTopology`. |
+| **REQ-70** | Challenge Prerequisite & Security Boundary Defense | **Verified** | Direct objective completion without prerequisites is blocked; network access to isolated subnets strictly enforces pivot footholds. |
+| **REQ-71** | Single-Award Flag & Progression Guarantee | **Verified** | Duplicate submissions return 0 points; corrupted or negative score saves are rejected by schema validators. |
+| **REQ-72** | AI Adapter Resilient Fallback | **Verified** | Network drops, timeouts, and API errors are caught gracefully without interrupting gameplay or crashing components. |
+| **REQ-73** | Terminal Host Process Sandboxing | **Verified** | Shell tokenizer executes entirely within virtual TypeScript memory without invoking `eval()`, `new Function()`, or host processes. |
+| **REQ-74** | Bundle Code Splitting & Performance Optimization | **Verified** | Configured Vite manual chunking for React, ReactFlow, and Lucide vendors, cutting main application chunk from 738kB to 373kB. |
+| **REQ-75** | Automated CI Workflow & Full Regression Suite | **Verified** | Added `.github/workflows/ci.yml` running type checks, tests, and build; `phase11SecurityHardeningAndRegressions.test.tsx` covers all 12 regression scenarios (24 tests, 218 total passing). |
+
 
 
 
