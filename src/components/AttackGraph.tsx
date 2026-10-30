@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ReactFlow, {
   Background,
   MiniMap,
@@ -74,10 +75,12 @@ export const AttackGraphInner: React.FC = () => {
     setActiveMachine(machineId);
   }, [setActiveMachine]);
 
+  const navigate = useNavigate();
+
   const handleNavigateToMachine = useCallback((machineId: string) => {
     soundManager.playKey();
-    window.location.hash = `#/machines/${machineId}`;
-  }, []);
+    navigate(`/machines/${machineId}`);
+  }, [navigate]);
 
   const handleZoomIn = useCallback(() => {
     if (rfInstance) {
