@@ -148,6 +148,19 @@
 - [x] Zero credential exposure: API keys are maintained in session memory and never committed or baked into production bundles.
 - [x] Complete automated test suite (`src/tests/phase9GhostOpsAi.test.ts`) covering all 5 hint levels, parameter rendering, autopilot execution, network isolation, and provider failure handling (16 tests, 181 total passing tests).
 
+## Phase 10: Immersion, Accessibility, and UI Polish
+- [x] Optional procedural audio using Web Audio API with master GainNode volume slider and mute controls (`soundManager.ts`).
+- [x] Strict audio safety: no autoplay before user interaction, clamped volume levels (0.0 to 1.0), and lazy audio context initialization.
+- [x] Optional CRT scanlines and subtle retro terminal shaders with toggle buttons in TopStatusBar and Settings (`AppShell.tsx`, `TopStatusBar.tsx`).
+- [x] Reduced-motion support honoring both OS-level `prefers-reduced-motion` and user settings toggle via root `motion-reduce` class.
+- [x] Terminal font-size controls (`sm`, `base`, `lg`) with Zoom In, Zoom Out, and indicator pills in `PwnboxTerminal.tsx` and Settings.
+- [x] Keyboard shortcut documentation modal (`KeyboardShortcutsModal.tsx`) with `<kbd>` key combination badges and global `Ctrl+K` / `Cmd+K` / `Esc` handling.
+- [x] Consistent, accessible confirmation dialogs (`ConfirmDialog.tsx`) replacing native `window.confirm` with full ARIA `alertdialog` roles, keyboard navigation, and destructive style options.
+- [x] Visible focus rings (`focus:ring-1 focus:ring-emerald-500`) and keyboard accessibility across sidebar, navigation links, and action buttons.
+- [x] Non-color status cues across machine compromise levels and CTF flags (distinct text labels and icons rather than solely relying on color).
+- [x] Comprehensive automated test suite (`src/tests/phase10ImmersionAndA11y.test.tsx`) covering preferences store, Web Audio safety, ConfirmDialog, KeyboardShortcutsModal, and TopStatusBar accessibility (13 tests, 194 total passing tests).
+
+
 
 
 

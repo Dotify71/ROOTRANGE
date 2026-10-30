@@ -87,6 +87,13 @@ ROOTRANGE is an open-source, in-browser Cyber Range and Gamified Penetration Tes
 - Typed Provider Abstraction for Local Ollama, OpenAI, Anthropic, and Google Gemini with graceful error fallback.
 - Automated test suite (`src/tests/phase9GhostOpsAi.test.ts`) validating offline guidance, templates, autopilot constraints, and provider failure handling (16 tests, 181 total passing).
 
-### Phase 10: Final Hardening & Verification
-- End-to-end integration test suites across full cyber range operations.
-- Production build optimization and deployment readiness.
+### Phase 10: Immersion, Accessibility, and UI Polish
+- Procedural Web Audio API sound synthesis with master gain control, volume slider, mute toggles, and zero pre-interaction autoplay (`soundManager.ts`).
+- CRT scanline phosphor shaders and retro workstation effects toggleable globally (`AppShell.tsx`, `TopStatusBar.tsx`).
+- Reduced-motion accessibility honoring both system OS setting (`prefers-reduced-motion: reduce`) and manual toggle via root `motion-reduce` class.
+- Terminal typography scaling controls (`sm`, `base`, `lg`) in `PwnboxTerminal.tsx` and `SettingsPage.tsx`.
+- Keyboard shortcut documentation modal with accessible `<kbd>` badges and `Ctrl+K` / `Cmd+K` / `Esc` event handlers (`KeyboardShortcutsModal.tsx`).
+- Semantic, accessible confirmation dialogs (`ConfirmDialog.tsx`) replacing all native `window.confirm` calls with full ARIA `alertdialog` semantics.
+- Non-color status cues across machine compromise levels and CTF flags.
+- Comprehensive automated test suite (`src/tests/phase10ImmersionAndA11y.test.tsx`) covering audio safety, preferences store, confirm dialogs, shortcuts, and accessibility (13 tests, 194 total passing).
+

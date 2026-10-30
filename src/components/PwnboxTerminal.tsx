@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Terminal as TerminalIcon, Sparkles, CornerDownLeft, Volume2, VolumeX, ShieldAlert, ExternalLink } from 'lucide-react';
+import { Terminal as TerminalIcon, Sparkles, CornerDownLeft, Volume2, VolumeX, ShieldAlert, ExternalLink, ZoomIn, ZoomOut } from 'lucide-react';
 import { CommandInterpreter, CommandContext } from '../services/commandInterpreter';
 import { CommandRegistry } from '../services/commandRegistry';
 import { VirtualFileSystem } from '../services/virtualFs';
 import { soundManager } from '../audio/soundManager';
 import { useGameStore } from '../store/gameStore';
+import { usePreferencesStore } from '../store/preferencesStore';
 
 interface TerminalLine {
   type: 'input' | 'output' | 'system' | 'prompt';
@@ -36,7 +37,7 @@ export const PwnboxTerminal: React.FC = () => {
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const [input, setInput] = useState<string>('');
-  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const { isMuted, toggleMute, terminalFontSize, setTerminalFontSize } = usePreferencesStore();
 
   const [lines, setLines] = useState<TerminalLine[]>([
     { type: 'system', text: '╔═════════════════════════════════════════════════════════════════════════╗' },
@@ -221,8 +222,37 @@ export const PwnboxTerminal: React.FC = () => {
           </span>
         </div>
 
-        {/* Audio Toggle & Target Info */}
-        <div className="flex items-center space-x-3 text-[11px]">
+        {/* Audio Toggle, Font Size Controls & Target Info */}
+        <div className="flex items-center space-x-2.5 text-[11px]">
+          {/* Terminal Font Size Controls */}
+          <div className="flex items-center bg-slate-900 border border-slate-800 rounded p-0.5" role="group" aria-label="Terminal Font Size">
+            <button
+              onClick={() => {
+                soundManager.playKey();
+                const nextSize = terminalFontSize === 'lg' ? 'base' : 'sm';
+                setTerminalFontSize(nextSize);
+              }}
+              className="p-1 rounded text-slate-400 hover:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              title="Decrease Font Size"
+              aria-label="Decrease Font Size"
+            >
+              <ZoomOut className="w-3 h-3" />
+            </button>
+            <span className="text-[9px] px-1 text-slate-500 font-bold uppercase">{terminalFontSize}</span>
+            <button
+              onClick={() => {
+                soundManager.playKey();
+                const nextSize = terminalFontSize === 'sm' ? 'base' : 'lg';
+                setTerminalFontSize(nextSize);
+              }}
+              className="p-1 rounded text-slate-400 hover:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              title="Increase Font Size"
+              aria-label="Increase Font Size"
+            >
+              <ZoomIn className="w-3 h-3" />
+            </button>
+          </div>
+
           <span className="text-slate-400 flex items-center gap-1.5">
             TARGET: <strong className="text-emerald-400">{activeTarget.ip}</strong>
             <Link
@@ -236,11 +266,11 @@ export const PwnboxTerminal: React.FC = () => {
           </span>
           <button
             onClick={() => {
-              const muted = soundManager.toggleMute();
-              setIsMuted(muted);
+              toggleMute();
             }}
-            className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800"
+            className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
+            aria-label={isMuted ? 'Unmute Audio' : 'Mute Audio'}
           >
             {isMuted ? <VolumeX className="w-3.5 h-3.5 text-red-400" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400" />}
           </button>
@@ -306,7 +336,9 @@ export const PwnboxTerminal: React.FC = () => {
 
       {/* Terminal Output Buffer */}
       <div
-        className="flex-1 p-3 overflow-y-auto space-y-1 text-xs select-text"
+        className={`flex-1 p-3 overflow-y-auto space-y-1 select-text ${
+          terminalFontSize === 'sm' ? 'text-[11px]' : terminalFontSize === 'lg' ? 'text-sm' : 'text-xs'
+        }`}
         onClick={() => inputRef.current?.focus()}
       >
         {lines.map((line, idx) => (

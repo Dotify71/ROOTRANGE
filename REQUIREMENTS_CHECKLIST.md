@@ -63,6 +63,13 @@
 | **REQ-59** | Adversary Autopilot Simulation | **Verified** | Step-by-step autopilot engine with Pause, Step-Forward, and Reset controls operating through genuine simulation rules in `autopilotService.ts`. |
 | **REQ-60** | Pluggable Provider Abstraction & Resilient Fallback | **Verified** | `ExternalAiAdapterProvider` supports Ollama, OpenAI, Anthropic, and Gemini, gracefully falling back to offline provider on missing keys or network errors. |
 | **REQ-61** | GhostOps Automated Verification | **Verified** | `src/tests/phase9GhostOpsAi.test.ts` exercises all 5 hint levels, template rendering, autopilot constraints, and provider failure handling (16 tests, 181 total passing). |
+| **REQ-62** | Procedural Web Audio Synthesizer & Safety | **Verified** | `soundManager.ts` implements volume control, mute toggles, master GainNode, and lazy context initialization without pre-interaction autoplay. |
+| **REQ-63** | Optional CRT Shaders & Reduced-Motion | **Verified** | `AppShell.tsx` and `preferencesStore.ts` provide toggleable CRT scanlines and respect both user settings and OS `prefers-reduced-motion`. |
+| **REQ-64** | Terminal Font Scaling Controls | **Verified** | `PwnboxTerminal.tsx` and `SettingsPage.tsx` provide Zoom In, Zoom Out, and size selectors (`sm`, `base`, `lg`) adapting terminal buffer typography. |
+| **REQ-65** | Accessible Keyboard Shortcuts Documentation | **Verified** | `KeyboardShortcutsModal.tsx` provides full shortcut manual bound to `Ctrl+K` / `Cmd+K` / `Esc` with accessible `<kbd>` components. |
+| **REQ-66** | Accessible Confirmation Dialogs | **Verified** | `ConfirmDialog.tsx` replaces all native browser alert/confirm popups with ARIA `alertdialog`, visible focus management, and destructive variants. |
+| **REQ-67** | Phase 10 Immersion & Accessibility Verification | **Verified** | `src/tests/phase10ImmersionAndA11y.test.tsx` validates preferences store, Web Audio, ConfirmDialog, shortcuts modal, and status bar accessibility (13 tests, 194 total passing). |
+
 
 
 
