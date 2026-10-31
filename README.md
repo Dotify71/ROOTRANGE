@@ -13,6 +13,7 @@
                      [ G H O S T // O P S ]
 ```
 
+[![Release](https://img.shields.io/badge/Release-v1.0.0%20GA-blue.svg)](RELEASE_NOTES.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3-61dafb?logo=react)](https://react.dev/)
